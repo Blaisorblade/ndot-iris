@@ -1,4 +1,5 @@
 -Q theories DN
 -arg -w -arg -notation-overridden,-redundant-canonical-projection,-several-object-files
 
+theories/autosubst_preds.v
 theories/DMin/syn.v
