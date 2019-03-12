@@ -3,10 +3,6 @@ From stdpp Require Import base.
 From Coq.ssr Require Import ssreflect.
 From iris.algebra Require Import base.
 
-(* Class SynExt vl α := {
-  r :> Rename α;
-  r :> Rename α;
-}. *)
 
 Section syn.
   Context (α: Type).
@@ -32,14 +28,14 @@ Section syn.
   with   vls_mut := Induction for vls Sort Prop.
   Combined Scheme syntax_mutind from tm_mut, vl_mut, vls_mut.
 
-  Instance Inh_vl : Inhabited vl := populate (vnat 0).
-  Instance Inh_tm : Inhabited tm := populate (tv inhabitant).
-  Instance Inh_vls : Inhabited vls := populate (vnil).
+  Global Instance Inh_vl : Inhabited vl := populate (vnat 0).
+  Global Instance Inh_tm : Inhabited tm := populate (tv inhabitant).
+  Global Instance Inh_vls : Inhabited vls := populate vnil.
 
-  Instance Ids_vl : Ids vl.
+  Global Instance Ids_vl : Ids vl.
   Proof. by constructor. Defined.
-  Instance Ids_tm : Ids tm := λ _, inhabitant.
-  Instance Ids_vls : Ids vls := λ _, inhabitant.
+  Global Instance Ids_tm : Ids tm := λ _, inhabitant.
+  Global Instance Ids_vls : Ids vls := λ _, inhabitant.
 
   Fixpoint tm_rename (sb : var → var) t : tm :=
     let a := vl_rename : Rename vl in
@@ -70,7 +66,7 @@ Section syn.
     | vcons v vs => vcons (rename sb v) (rename sb vs)
     end.
 
-  Instance Rename_vl : Rename vl := vl_rename.
+  Global Instance Rename_vl : Rename vl := vl_rename.
 
   Context {HaS: HSubst vl α}.
 
@@ -104,9 +100,9 @@ Section syn.
     | vcons v vs => vcons (subst sb v) (hsubst sb vs)
     end.
 
-  Instance HSubst_tm : HSubst vl tm := tm_hsubst.
-  Instance Subst_vl : Subst vl := vl_subst.
-  Instance HSubst_vls : HSubst vl vls := vls_hsubst.
+  Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
+  Global Instance Subst_vl : Subst vl := vl_subst.
+  Global Instance HSubst_vls : HSubst vl vls := vls_hsubst.
 
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
@@ -123,9 +119,9 @@ Section syn.
       try (apply vl_eq_dec || apply tm_eq_dec || apply vls_eq_dec ||
            apply nat_eq_dec || apply α_eq_dec); eauto.
   Qed.
-  Instance tm_eq_dec' : EqDecision tm := tm_eq_dec.
-  Instance vl_eq_dec' : EqDecision vl := vl_eq_dec.
-  Instance vls_eq_dec' : EqDecision vls := vls_eq_dec.
+  Global Instance tm_eq_dec' : EqDecision tm := tm_eq_dec.
+  Global Instance vl_eq_dec' : EqDecision vl := vl_eq_dec.
+  Global Instance vls_eq_dec' : EqDecision vls := vls_eq_dec.
 
   Local Ltac finish_lists l x := idtac.
 
@@ -184,17 +180,17 @@ Section syn.
       auto using vl_rename_comp_Lemma, vl_comp_rename_Lemma.
   Qed.
 
-  Instance SubstLemmas_vl : SubstLemmas vl.
+  Global Instance SubstLemmas_vl : SubstLemmas vl.
   Proof.
     split; auto using vl_rename_Lemma, vl_ids_Lemma, vl_comp_Lemma.
   Qed.
 
-  Instance HSubstLemmas_tm : HSubstLemmas vl tm.
+  Global Instance HSubstLemmas_tm : HSubstLemmas vl tm.
   Proof.
     split; auto using tm_ids_Lemma, tm_comp_Lemma.
   Qed.
 
-  Instance HSubstLemmas_vls : HSubstLemmas vl vls.
+  Global Instance HSubstLemmas_vls : HSubstLemmas vl vls.
   Proof.
     split; auto using vls_ids_Lemma, vls_comp_Lemma.
   Qed.
