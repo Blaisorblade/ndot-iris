@@ -106,24 +106,6 @@ Section syn.
 
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
-  Context {α_eq_dec : EqDecision α}.
-
-  Lemma
-  tm_eq_dec (t1 t2 : tm) : Decision (t1 = t2)
-  with
-  vl_eq_dec (v1 v2 : vl) : Decision (v1 = v2)
-  with
-  vls_eq_dec (vs1 vs2 : vls) : Decision (vs1 = vs2).
-  Proof.
-    all: rewrite /Decision; decide equality;
-      try (apply vl_eq_dec || apply tm_eq_dec || apply vls_eq_dec ||
-           apply nat_eq_dec || apply α_eq_dec); eauto.
-  Qed.
-  Global Instance tm_eq_dec' : EqDecision tm := tm_eq_dec.
-  Global Instance vl_eq_dec' : EqDecision vl := vl_eq_dec.
-  Global Instance vls_eq_dec' : EqDecision vls := vls_eq_dec.
-
-  Local Ltac finish_lists l x := idtac.
 
   (* Hypothesis α_rename_Lemma: ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ]. *)
 
