@@ -3,9 +3,10 @@ From stdpp Require Import base.
 From Coq.ssr Require Import ssreflect.
 From iris.algebra Require Import base.
 
+From DN Require Import autosubst_preds.
 
 Section syn.
-  Context (α: Type).
+  Context {α: Type}.
 
   Inductive tm : Type :=
     | tv : vl → tm
@@ -176,5 +177,41 @@ Section syn.
   Proof.
     split; auto using vls_ids_Lemma, vls_comp_Lemma.
   Qed.
-
 End syn.
+
+Arguments tm: clear implicits.
+Arguments vl: clear implicits.
+Arguments vls: clear implicits.
+
+(* sv = sem values *)
+(* As expected, we can't instantiate alpha with predicates over values;
+  we must use OFEs for this. *)
+Fail Inductive sv := | mksv: vl (pred sv) -> sv.
+
+(* That would work out if we stratified things. Here's a fake example, for now, of what would happen. *)
+
+Inductive fake_sv := | mksv: vl (pred unit) -> fake_sv.
+Definition unsv '(mksv v) := v.
+Implicit Types (sv: fake_sv).
+(* Lemma sv_unsv: unsv >>> mksv = id.
+Proof. by f_ext => [[v]]/=. Qed. *)
+
+Lemma sv_unsv sv: mksv (unsv sv) = sv.
+Proof. by destruct sv. Qed.
+Lemma unsv_sv v: unsv (mksv v) = v.
+Proof. done. Qed.
+
+Instance Ids_fake_sv: Ids fake_sv := fun x => mksv (ids x).
+Instance Rename_fake_sv: Rename fake_sv := fun r sv => mksv (rename r (unsv sv)).
+Instance Subst_fake_sv: Subst fake_sv := fun s sv => mksv (subst (s >>> unsv) (unsv sv)).
+
+Lemma ids_unsv_ids: ids >>> unsv = ids.
+Proof. done. Qed.
+Hint Rewrite ids_unsv_ids sv_unsv: autosubst.
+
+Instance SubstLemmas_fake_sv: SubstLemmas fake_sv.
+Proof.
+  split; intros; try match goal with
+    x: fake_sv |- _ => destruct x as [v]
+  end; by rewrite /Rename_fake_sv /Subst_fake_sv /=; asimpl.
+Qed.
