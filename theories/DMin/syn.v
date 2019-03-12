@@ -1,3 +1,8 @@
+(** AUTHORS:
+    The Autosubst instantiation code derives from code from Amin Timany,
+    used in a parallel project with me.
+    Paolo. *)
+
 From Autosubst Require Export Autosubst.
 From stdpp Require Import base.
 From Coq.ssr Require Import ssreflect.
@@ -5,8 +10,10 @@ From iris.algebra Require Import base.
 
 From DN Require Import autosubst_preds.
 
+Local Hint Resolve α_rename_Lemma α_comp_rename_Lemma α_rename_comp_Lemma α_comp_Lemma.
+
 Section syn.
-  Context {α: Type}.
+  Context {α: Type} {Ids_α: Ids α} {Rename_α: Rename α}.
 
   Inductive tm : Type :=
     | tv : vl → tm
@@ -17,26 +24,20 @@ Section syn.
     | var_vl : var → vl
     | vnat : nat → vl
     | vabs : tm → vl
-    | vpack : α → vls → tm → vl
-  with vls: Type :=
-    | vnil : vls
-    | vcons : vl → vls → vls.
+    | vpack : α → tm → vl.
 
-  Implicit Types (t: tm) (v: vl) (vs: vls).
+  Implicit Types (t: tm) (v: vl).
 
   Scheme tm_mut := Induction for tm Sort Prop
-  with   vl_mut := Induction for vl Sort Prop
-  with   vls_mut := Induction for vls Sort Prop.
-  Combined Scheme syntax_mutind from tm_mut, vl_mut, vls_mut.
+  with   vl_mut := Induction for vl Sort Prop.
+  Combined Scheme syntax_mutind from tm_mut, vl_mut.
 
   Global Instance Inh_vl : Inhabited vl := populate (vnat 0).
   Global Instance Inh_tm : Inhabited tm := populate (tv inhabitant).
-  Global Instance Inh_vls : Inhabited vls := populate vnil.
 
   Global Instance Ids_vl : Ids vl.
   Proof. by constructor. Defined.
   Global Instance Ids_tm : Ids tm := λ _, inhabitant.
-  Global Instance Ids_vls : Ids vls := λ _, inhabitant.
 
   Fixpoint tm_rename (sb : var → var) t : tm :=
     let a := vl_rename : Rename vl in
@@ -50,27 +51,17 @@ Section syn.
   with
   vl_rename (sb : var → var) v : vl :=
     let a := vl_rename : Rename vl in
-    let b := vls_rename : Rename vls in
-    (* let c := tm_rename : Rename tm in *)
+    (* let b := tm_rename : Rename tm in *)
     match v with
     | var_vl x => var_vl (sb x)
     | vnat n => vnat n
     | vabs t => vabs (tm_rename (upren sb) t)
-    | vpack α vs t => vpack α (rename sb vs) (tm_rename sb t)
-    end
-  with
-  vls_rename (sb : var → var) vs : vls :=
-    let a := vl_rename : Rename vl in
-    let b := vls_rename : Rename vls in
-    match vs with
-    | vnil => vnil
-    | vcons v vs => vcons (rename sb v) (rename sb vs)
+    | vpack a t => vpack (rename sb a) (tm_rename sb t)
     end.
 
   Global Instance Rename_vl : Rename vl := vl_rename.
 
   Context {HaS: HSubst vl α}.
-
   Fixpoint tm_hsubst (sb : var → vl) (e : tm) : tm :=
     let a := tm_hsubst : HSubst vl tm in
     let b := vl_subst : Subst vl in
@@ -84,83 +75,60 @@ Section syn.
   vl_subst (sb : var → vl) (v : vl) : vl :=
     let a := tm_hsubst : HSubst vl tm in
     let b := vl_subst : Subst vl in
-    let c := vls_hsubst : HSubst vl vls in
     match v with
     | var_vl x => sb x
     | vnat n => vnat n
     | vabs t => vabs (hsubst (up sb) t)
-    | vpack α vs t => vpack α (hsubst sb vs) (hsubst sb t)
-    end
-  with
-  vls_hsubst (sb : var → vl) vs : vls :=
-    let a := tm_hsubst : HSubst vl tm in
-    let b := vl_subst : Subst vl in
-    let c := vls_hsubst : HSubst vl vls in
-    match vs with
-    | vnil => vnil
-    | vcons v vs => vcons (subst sb v) (hsubst sb vs)
+    | vpack a t => vpack (hsubst sb a) (hsubst sb t)
     end.
 
   Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
   Global Instance Subst_vl : Subst vl := vl_subst.
-  Global Instance HSubst_vls : HSubst vl vls := vls_hsubst.
+
+  Context `{!HSubstLemmas vl α} `{!HRenameLemmas vl α}.
 
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
 
-  (* Hypothesis α_rename_Lemma: ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ]. *)
-
   Lemma tm_rename_Lemma (ξ : var → var) t : tm_rename ξ t = t.|[ren ξ]
   with
-  vl_rename_Lemma (ξ : var → var) v  : rename ξ v = v.[ren ξ]
-  with
-  vls_rename_Lemma (ξ : var → var) vs : vls_rename ξ vs = vs.|[ren ξ].
+  vl_rename_Lemma (ξ : var → var) v  : rename ξ v = v.[ren ξ].
   Proof.
-    all: destruct 0; rewrite /= ?up_upren_internal; by f_equal.
+    all: destruct 0; rewrite /= ?up_upren_internal; f_equal; eauto.
   Qed.
 
   Lemma tm_ids_Lemma t : t.|[ids] = t
   with
-  vl_ids_Lemma v : v.[ids] = v
-  with
-  vls_ids_Lemma vs : vs.|[ids] = vs.
+  vl_ids_Lemma v : v.[ids] = v.
   Proof.
-    all: destruct 0; rewrite /= ?up_id_internal; by f_equal.
+    all: destruct 0; rewrite /= ?up_id_internal; f_equal => //; by asimpl.
   Qed.
 
   Lemma vl_comp_rename_Lemma (ξ : var → var) (σ : var → vl) (v : vl) :
     (rename ξ v).[σ] = v.[ξ >>> σ]
   with
   tm_comp_rename_Lemma (ξ : var → var) (σ : var → vl) (t : tm) :
-    (tm_rename ξ t).|[σ] = t.|[ξ >>> σ]
-  with
-  vls_comp_rename_Lemma (ξ : var → var) (σ : var → vl) (vs : vls) :
-    (vls_rename ξ vs).|[σ] = vs.|[ξ >>> σ].
+    (tm_rename ξ t).|[σ] = t.|[ξ >>> σ].
   Proof.
-    all: destruct 0; rewrite /= 1? up_comp_ren_subst; by f_equal.
+    all: destruct 0; rewrite /= 1? up_comp_ren_subst; f_equal; eauto.
   Qed.
 
   Lemma vl_rename_comp_Lemma (σ : var → vl) (ξ : var → var) (v : vl) :
     rename ξ v.[σ] = v.[σ >>> rename ξ]
   with
   tm_rename_comp_Lemma (σ : var → vl) (ξ : var → var) (t : tm) :
-    tm_rename ξ t.|[σ] = t.|[σ >>> rename ξ]
-  with
-  vls_rename_comp_Lemma (σ : var → vl) (ξ : var → var) (vs : vls) :
-    vls_rename ξ vs.|[σ] = vs.|[σ >>> rename ξ].
+    tm_rename ξ t.|[σ] = t.|[σ >>> rename ξ].
   Proof.
     all: destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal => //;
-      auto using vl_rename_Lemma, vl_comp_rename_Lemma.
+      eauto using vl_rename_Lemma, vl_comp_rename_Lemma.
   Qed.
 
   Lemma vl_comp_Lemma (σ τ : var → vl) (v : vl) : v.[σ].[τ] = v.[σ >> τ]
   with
-  tm_comp_Lemma (σ τ : var → vl) (t : tm) : t.|[σ].|[τ] = t.|[σ >> τ]
-  with
-  vls_comp_Lemma (σ τ : var → vl) (vs : vls) : vs.|[σ].|[τ] = vs.|[σ >> τ].
+  tm_comp_Lemma (σ τ : var → vl) (t : tm) : t.|[σ].|[τ] = t.|[σ >> τ].
   Proof.
     all: destruct 0; rewrite /= ? up_comp_internal; f_equal;
-      auto using vl_rename_comp_Lemma, vl_comp_rename_Lemma.
+      eauto using vl_rename_comp_Lemma, vl_comp_rename_Lemma.
   Qed.
 
   Global Instance SubstLemmas_vl : SubstLemmas vl.
@@ -172,46 +140,82 @@ Section syn.
   Proof.
     split; auto using tm_ids_Lemma, tm_comp_Lemma.
   Qed.
-
-  Global Instance HSubstLemmas_vls : HSubstLemmas vl vls.
-  Proof.
-    split; auto using vls_ids_Lemma, vls_comp_Lemma.
-  Qed.
 End syn.
 
 Arguments tm: clear implicits.
 Arguments vl: clear implicits.
-Arguments vls: clear implicits.
 
 (* sv = sem values *)
 (* As expected, we can't instantiate alpha with predicates over values;
   we must use OFEs for this. *)
 Fail Inductive sv := | mksv: vl (pred sv) -> sv.
 
-(* That would work out if we stratified things. Here's a fake example, for now, of what would happen. *)
+(** That would work out if we stratified things using OFEs.
+    Here's a test of how the rest of the infrastructure works: we use unit as
+    the approximation of vl.
 
-Inductive fake_sv := | mksv: vl (pred unit) -> fake_sv.
-Definition unsv '(mksv v) := v.
-Implicit Types (sv: fake_sv).
-(* Lemma sv_unsv: unsv >>> mksv = id.
-Proof. by f_ext => [[v]]/=. Qed. *)
+    Surprisingly, this instantiation is harder than it should be using OFEs.
+    Since we're not constructing the limit, we need both instances for `pred unit`
+    (where unit is vl_0) and instances for `pred fake_sv`.
+  *)
 
-Lemma sv_unsv sv: mksv (unsv sv) = sv.
-Proof. by destruct sv. Qed.
-Lemma unsv_sv v: unsv (mksv v) = v.
-Proof. done. Qed.
+Section level0.
+  (* Instance Ids_unit: Ids () := λ _, ().
+  Instance Rename_unit: Rename () := λ _ _, ().
+  Instance Subst_unit: Subst () := λ _ _, (). *)
 
-Instance Ids_fake_sv: Ids fake_sv := fun x => mksv (ids x).
-Instance Rename_fake_sv: Rename fake_sv := fun r sv => mksv (rename r (unsv sv)).
-Instance Subst_fake_sv: Subst fake_sv := fun s sv => mksv (subst (s >>> unsv) (unsv sv)).
+  Definition pu := pred ().
+  Global Instance Ids_pu: Ids pu := _.
+  Global Instance Rename_pu: Rename pu := _.
+  Global Instance HSubst_pu: HSubst (vl pu) pu := λ sb pr ρ, pr ρ.
 
-Lemma ids_unsv_ids: ids >>> unsv = ids.
-Proof. done. Qed.
-Hint Rewrite ids_unsv_ids sv_unsv: autosubst.
+  Global Instance HSubstLemmas_pu: HSubstLemmas (vl pu) pu.
+  Proof. done. Qed.
 
-Instance SubstLemmas_fake_sv: SubstLemmas fake_sv.
-Proof.
-  split; intros; try match goal with
-    x: fake_sv |- _ => destruct x as [v]
-  end; by rewrite /Rename_fake_sv /Subst_fake_sv /=; asimpl.
-Qed.
+  Global Instance HRenameLemmas_pu: HRenameLemmas (vl pu) pu.
+  Proof.
+    split; rewrite /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=;
+    by intros; f_ext => c; f_equal; f_ext => /= x;
+    (* get "eta" for unit: *)
+    destruct (c x); destruct (c (ξ x)).
+  Qed.
+
+  Global Instance pv_subst: Subst (vl pu) := _.
+End level0.
+
+Section fake_sv.
+  Inductive fake_sv := | mksv: vl (pred unit) -> fake_sv.
+  Implicit Types (sv: fake_sv).
+
+  Definition unsv '(mksv v) := v.
+
+  Lemma sv_unsv sv: mksv (unsv sv) = sv.
+  Proof. by destruct sv. Qed.
+  (* Lemma sv_unsv: unsv >>> mksv = id.
+  Proof. by f_ext => [[v]]/=. Qed. *)
+  (* Lemma unsv_sv v: unsv (mksv v) = v.
+  Proof. done. Qed. *)
+
+  Global Instance Ids_fake_sv: Ids fake_sv := ids >>> mksv.
+  (* fun x => mksv (ids x). *)
+
+  Lemma ids_unsv_ids: ids >>> unsv = ids.
+  Proof. done. Qed.
+  Hint Rewrite ids_unsv_ids sv_unsv: autosubst.
+
+  Global Instance Rename_fake_sv: Rename fake_sv := fun r sv => mksv (rename r (unsv sv)).
+  Global Instance Subst_fake_sv: Subst fake_sv := fun s sv => mksv (subst (s >>> unsv) (unsv sv)).
+
+  Global Instance HSubst_psv: HSubst fake_sv (pred fake_sv) := _.
+
+  Global Instance SubstLemmas_fake_sv: SubstLemmas fake_sv.
+  Proof.
+    (* Unwrap fake values and exploit SubstLemmas_vl through asimpl. *)
+    split; intros; try match goal with
+      x: fake_sv |- _ => destruct x
+    end; rewrite /Rename_fake_sv /Subst_fake_sv /=; by asimpl.
+  Qed.
+
+  Global Instance HSubstLemmas_pred : HSubstLemmas fake_sv (pred fake_sv) := _.
+  Global Instance HRenameLemmas_pred : HRenameLemmas fake_sv (pred fake_sv) := _.
+End fake_sv.
