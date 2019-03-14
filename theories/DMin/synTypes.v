@@ -1,7 +1,5 @@
 From Autosubst Require Export Autosubst.
 From stdpp Require Import base.
-From Coq.ssr Require Import ssreflect.
-From iris.algebra Require Import base.
 
 From DN Require Import autosubst_preds.
 From DN.DMin Require syn.

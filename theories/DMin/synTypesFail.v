@@ -34,5 +34,5 @@ with ty {α: Type}: Type :=
 Arguments tm: clear implicits.
 Arguments vl: clear implicits.
 Arguments ty: clear implicits.
-Inductive loop :=
+Fail Inductive loop :=
   | mkL : ty loop → loop.
