@@ -74,7 +74,6 @@ Section syn.
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
 
-  Require Import Program.Equality.
   Fixpoint syn_rename_Lemma {s} (ξ : var → var) (t: syn s) : rename ξ t = syn_hsubst (ren ξ) t.
   Proof. destruct t; rewrite /= ?up_upren_internal; f_equal; eauto. Qed.
 
