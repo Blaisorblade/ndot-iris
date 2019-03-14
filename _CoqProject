@@ -3,4 +3,5 @@
 
 theories/autosubst_preds.v
 theories/DMin/syn.v
+theories/DMin/synNonMutual.v
 theories/DMin/synTypes.v
