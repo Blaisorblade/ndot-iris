@@ -22,8 +22,8 @@ Section syn.
     | vabs : syn tms → syn vls
     | vpack : α → syn tms → syn vls.
 
-  Definition tm := syn tms.
-  Definition vl := syn vls.
+  Notation tm := (syn tms).
+  Notation vl := (syn vls).
   Implicit Types (t: tm) (v: vl) (s: sort).
 
   Global Instance Inh_vl : Inhabited vl := populate (vnat 0).
@@ -113,5 +113,45 @@ Section syn.
 End syn.
 
 Arguments syn: clear implicits.
-Inductive ty: Type :=
-| TProj : syn ty vls → ty.
+Module withTypes.
+  Inductive ty: Type :=
+  | TProj : syn ty vls → ty.
+
+  Notation tm := (syn ty tms).
+  Notation vl := (syn ty vls).
+  Implicit Types (T: ty).
+
+  Global Instance Inh_ty : Inhabited ty := populate (TProj inhabitant).
+  Global Instance Ids_ty : Ids ty := λ _, inhabitant.
+
+  Fixpoint ty_rename (sb : var → var) T: ty :=
+    let a := ty_rename : Rename ty in
+    let b := syn_rename : Rename vl in
+    (* let c := syn_rename : Rename tm in *)
+    match T with
+    | TProj v => TProj (rename sb v)
+    end.
+  Global Instance Rename_ty: Rename ty := ty_rename.
+  Global Instance Rename_syn {s}: Rename (syn ty s) := syn_rename.
+
+  Fixpoint ty_hsubst (sb : var → vl) T: ty :=
+    let a := ty_hsubst : HSubst vl ty in
+    let b := syn_hsubst : Subst vl in
+    match T with
+    | TProj v => TProj (subst sb v)
+    end.
+
+  Global Instance HSubst_ty: HSubst vl ty := ty_hsubst.
+  Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
+  Global Instance Subst_vl : Subst vl := vl_subst.
+  Check @syn_rename_Lemma.
+  Fixpoint ty_rename_Lemma (ξ : var → var) T : rename ξ T = T.|[ren ξ].
+  Proof.
+    destruct T; rewrite /= ?up_upren_internal; f_equal; eauto. unshelve eapply @syn_rename_Lemma.
+    (* This needs an instance of HRenameLemmas. So I think I should split the class.
+       Using the current lemma to tie the knot sort-of works, modulo guardedness... *)
+    split. Guarded. eapply ty_rename_Lemma.
+    Fail Guarded.
+    (* So, maybe I need to redo the inductive proof, or stick to synTypes.v? *)
+  Admitted.
+End withTypes.
