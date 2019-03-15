@@ -5,8 +5,6 @@ From iris.algebra Require Import base.
 
 From DN Require Import autosubst_preds.
 
-Local Hint Resolve α_rename_Lemma α_comp_rename_Lemma α_rename_comp_Lemma α_comp_Lemma.
-
 Inductive sort := tms | vls.
 
 Section syn.
@@ -69,37 +67,33 @@ Section syn.
   Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
   Global Instance Subst_vl : Subst vl := vl_subst.
 
-  Context `{!HSubstLemmas vl α} `{!HRenameLemmas vl α}.
+  Context `{!HRenameLemma vl α} `{!HCompRenameLemma vl α} `{!HCompLemma vl α} `{!HRenameCompLemma vl α} `{!HSubstIdLemma vl α}.
 
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
 
   Fixpoint syn_rename_Lemma {s} (ξ : var → var) (t: syn s) : rename ξ t = syn_hsubst (ren ξ) t.
-  Proof. destruct t; rewrite /= ?up_upren_internal; f_equal; eauto. Qed.
+  Proof. destruct 0; rewrite /= ?up_upren_internal; f_equal; eauto. Defined.
 
   Fixpoint syn_ids_Lemma {s} (t: syn s) : syn_hsubst ids t = t.
-  Proof.
-    destruct t; rewrite /= ?up_id_internal; f_equal; eauto; by asimpl.
-  Qed.
+  Proof. destruct 0; rewrite /= ?up_id_internal; f_equal; eauto. Defined.
 
   Fixpoint syn_comp_rename_Lemma {s} (ξ : var → var) (σ : var → vl) (t : syn s) :
     syn_hsubst σ (rename ξ t) = syn_hsubst (ξ >>> σ) t.
-  Proof.
-    destruct t; rewrite /= 1? up_comp_ren_subst; f_equal; eauto.
-  Qed.
+  Proof. destruct 0; rewrite /= 1? up_comp_ren_subst; f_equal; eauto. Defined.
 
   Fixpoint syn_rename_comp_Lemma {s} (σ : var → vl) (ξ : var → var) (t : syn s) :
     rename ξ (syn_hsubst σ t) = syn_hsubst (σ >>> rename ξ) t.
   Proof.
-    destruct t; rewrite /= ? up_comp_subst_ren_internal; f_equal => //;
+    destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal;
       eauto using syn_rename_Lemma, syn_comp_rename_Lemma.
-  Qed.
+  Defined.
 
   Fixpoint syn_comp_Lemma {s} (σ τ : var → vl) (t: syn s) : (syn_hsubst τ (syn_hsubst σ t)) = (syn_hsubst (σ >> τ) t).
   Proof.
     destruct 0; rewrite /= ? up_comp_internal; f_equal;
       eauto using syn_rename_comp_Lemma, syn_comp_rename_Lemma.
-  Qed.
+  Defined.
 
   Global Instance SubstLemmas_vl : SubstLemmas vl.
   Proof. split; eauto using syn_rename_Lemma, syn_ids_Lemma, syn_comp_Lemma. Qed.
@@ -109,6 +103,7 @@ Section syn.
 End syn.
 
 Arguments syn: clear implicits.
+
 Module withTypes.
   Inductive ty: Type :=
   | TProj : syn ty vls → ty.
@@ -140,13 +135,56 @@ Module withTypes.
   Global Instance HSubst_ty: HSubst vl ty := ty_hsubst.
   Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
   Global Instance Subst_vl : Subst vl := vl_subst.
+
+  (** To show termination, Coq must see that syn_rename_Lemma only calls
+      ty_rename_Lemma recursively on subterms.
+      Hence, syn_rename_Lemma can only be made opaque after this point.
+   *)
   Fixpoint ty_rename_Lemma (ξ : var → var) T : rename ξ T = T.|[ren ξ].
   Proof.
-    destruct T; rewrite /= ?up_upren_internal; f_equal; eauto. unshelve eapply @syn_rename_Lemma.
-    (* This needs an instance of HRenameLemmas. So I think I should split the class.
-       Using the current lemma to tie the knot sort-of works, modulo guardedness... *)
-    split. Guarded. eapply ty_rename_Lemma.
-    Fail Guarded.
-    (* So, maybe I need to redo the inductive proof, or stick to synTypes.v? *)
-  Admitted.
+    destruct 0; rewrite /= ?up_upren_internal; f_equal; eauto.
+    unshelve eapply syn_rename_Lemma. exact: ty_rename_Lemma.
+  Qed.
+  Global Opaque syn_rename_Lemma.
+  Instance ty_rename_Lemma' : HRenameLemma vl ty := ty_rename_Lemma.
+
+  Fixpoint ty_comp_rename_Lemma (ξ : var → var) (σ : var → vl) T :
+      (rename ξ T).|[σ] = T.|[ξ >>> σ].
+  Proof.
+    destruct 0; rewrite /= 1? up_comp_ren_subst; f_equal; eauto.
+    unshelve eapply syn_comp_rename_Lemma. exact: ty_comp_rename_Lemma.
+  Qed.
+  Global Opaque syn_comp_rename_Lemma.
+  Instance ty_comp_rename_Lemma' : HCompRenameLemma vl ty := ty_comp_rename_Lemma.
+
+  Fixpoint ty_rename_comp_Lemma (σ : var → vl) (ξ : var → var) T:
+      rename ξ T.|[σ] = T.|[σ >>> rename ξ].
+  Proof.
+    destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal => //.
+    unshelve eapply syn_rename_comp_Lemma. exact: ty_rename_comp_Lemma.
+  Qed.
+  Global Opaque syn_rename_comp_Lemma.
+  Instance ty_rename_comp_Lemma' : HRenameCompLemma vl ty := ty_rename_comp_Lemma.
+
+  Fixpoint ty_comp_Lemma (σ τ : var → vl) T:
+      T.|[σ].|[τ] = T.|[σ >> τ].
+  Proof.
+    destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal => //.
+    unshelve eapply syn_comp_Lemma. exact: ty_comp_Lemma.
+  Qed.
+  Global Opaque syn_comp_Lemma.
+  Instance ty_comp_Lemma' : HCompLemma vl ty := ty_comp_Lemma.
+
+  Fixpoint ty_ids_Lemma T: T.|[ids] = T.
+  Proof.
+    destruct 0; rewrite /= ?up_id_internal; f_equal; eauto.
+    unshelve eapply syn_ids_Lemma. exact: ty_ids_Lemma.
+  Qed.
+  Global Opaque syn_ids_Lemma.
+  Instance ty_ids_Lemma' : HSubstIdLemma vl ty := ty_ids_Lemma.
+
+  Global Instance HSubstLemmas_ty : HSubstLemmas vl ty.
+  Proof.
+    split; eauto using ty_ids_Lemma, ty_comp_Lemma.
+  Qed.
 End withTypes.

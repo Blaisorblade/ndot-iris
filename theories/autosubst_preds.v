@@ -10,38 +10,35 @@ From Autosubst Require Import Autosubst.
     was designed for, but it works. However, we end up needing a few extra lemmas about rename.
 
     Here's the ones I needed in my proofs. *)
-Class HRenameLemmas (vl α: Type)
-  `{!Ids α} `{!Rename α}
-  `{!Ids vl} `{!Rename vl} `{!Subst vl} `{!HSubst vl α} := {
-  mixin_α_rename_Lemma :>
-    ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ];
-  mixin_α_comp_rename_Lemma :>
-    ∀ (ξ : var → var) (σ : var → vl) (a: α),
-    (rename ξ a).|[σ] = a.|[ξ >>> σ];
-  mixin_α_rename_comp_Lemma :>
-    ∀ (σ : var → vl) (ξ : var → var) (t : α),
-    rename ξ t.|[σ] = t.|[σ >>> rename ξ];
-  mixin_α_comp_Lemma :>
-    ∀ (σ τ : var → vl) (t : α), t.|[σ].|[τ] = t.|[σ >> τ]
-}.
+Section classes.
+  Context (vl α: Type)
+    `{!Ids vl} `{!Rename vl} `{!Subst vl}
+    `{!Ids α} `{!Rename α} `{!HSubst vl α}.
 
-Section HRenameLemmas.
-  Context `{RL: HRenameLemmas vl α}.
+  Class HRenameLemma :=
+    α_rename_Lemma :
+      ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ].
 
-  Lemma α_rename_Lemma: ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ].
-  Proof. by destruct RL. Qed.
+  Class HCompRenameLemma :=
+    α_comp_rename_Lemma :
+      ∀ (ξ : var → var) (σ : var → vl) (a: α),
+      (rename ξ a).|[σ] = a.|[ξ >>> σ].
 
-  Lemma α_comp_rename_Lemma: ∀ (ξ : var → var) (σ : var → vl) (a: α),
-    (rename ξ a).|[σ] = a.|[ξ >>> σ].
-  Proof. by destruct RL. Qed.
+  Class HRenameCompLemma :=
+    α_rename_comp_Lemma :
+      ∀ (σ : var → vl) (ξ : var → var) (t : α),
+      rename ξ t.|[σ] = t.|[σ >>> rename ξ].
 
-  Lemma α_rename_comp_Lemma: ∀ (σ : var → vl) (ξ : var → var) (t : α),
-    rename ξ t.|[σ] = t.|[σ >>> rename ξ].
-  Proof. by destruct RL. Qed.
+  (** These two lemmas are part of HSubstLemmas, but we must split them to allow mutual
+      recursion among the base syntax and the plug-in sort α. *)
+  Class HCompLemma :=
+    α_comp_Lemma :
+      ∀ (σ τ : var → vl) (t : α), t.|[σ].|[τ] = t.|[σ >> τ].
 
-  Lemma α_comp_Lemma: ∀ (σ τ : var → vl) (t : α), t.|[σ].|[τ] = t.|[σ >> τ].
-  Proof. by destruct RL. Qed.
-End HRenameLemmas.
+  Class HSubstIdLemma :=
+    α_hsubst_id_Lemma :
+      ∀ (a : α), a.|[ids] = a.
+End classes.
 
 Section composition.
   Context (vl: Type) {Rename_vl: Rename vl} `{!Ids vl, !Subst vl, !SubstLemmas vl}.
@@ -55,14 +52,33 @@ Section composition.
   Global Instance Inh_pred : Inhabited pred := populate (fun _ _ => False).
   Global Instance Ids_pred : Ids pred := λ _, inhabitant.
 
-  Global Instance HSubstLemmas_pred : HSubstLemmas vl pred.
+  Global Instance HSubstIdLemma_pred : HSubstIdLemma vl pred.
   Proof.
-    split; rewrite /hsubst /HSubst_pred => //= *; f_ext => ?; by asimpl.
+    rewrite /HSubstIdLemma /hsubst /HSubst_pred => //= *; f_ext => ?. by asimpl.
   Qed.
 
-  Global Instance HRenameLemmas_pred : HRenameLemmas vl pred.
+  Global Instance HRenameLemma_pred : HRenameLemma vl pred.
   Proof.
-    split; rewrite /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
+    rewrite /HRenameLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
       fold (@rename _ Rename_vl); by asimpl.
+  Qed.
+
+  Global Instance HCompRenameLemma_pred : HCompRenameLemma vl pred := fun _ _ _ => eq_refl.
+
+  Global Instance HRenameCompLemma_pred : HRenameCompLemma vl pred.
+  Proof.
+    rewrite /HRenameCompLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?.
+      fold (@rename _ Rename_vl); by asimpl.
+  Qed.
+
+  Global Instance HCompLemma_pred : HCompLemma vl pred.
+  Proof.
+    rewrite /HCompLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
+      by asimpl.
+  Qed.
+
+  Global Instance HSubstLemmas_pred : HSubstLemmas vl pred.
+  Proof.
+    split => //. exact HSubstIdLemma_pred. exact HCompLemma_pred.
   Qed.
 End composition.

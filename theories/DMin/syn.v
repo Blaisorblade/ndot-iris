@@ -10,8 +10,6 @@ From iris.algebra Require Import base.
 
 From DN Require Import autosubst_preds.
 
-Local Hint Resolve α_rename_Lemma α_comp_rename_Lemma α_rename_comp_Lemma α_comp_Lemma.
-
 Section syn.
   Context {α: Type} {Ids_α: Ids α} {Rename_α: Rename α}.
 
@@ -85,7 +83,7 @@ Section syn.
   Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
   Global Instance Subst_vl : Subst vl := vl_subst.
 
-  Context `{!HSubstLemmas vl α} `{!HRenameLemmas vl α}.
+  Context `{!HRenameLemma vl α} `{!HCompRenameLemma vl α} `{!HCompLemma vl α} `{!HRenameCompLemma vl α} `{!HSubstIdLemma vl α}.
 
   (* Don't solve HSubst vl ? randomly. *)
   Hint Mode HSubst - + : typeclass_instances.
@@ -94,14 +92,14 @@ Section syn.
   with
   vl_rename_Lemma (ξ : var → var) v  : rename ξ v = v.[ren ξ].
   Proof.
-    all: destruct 0; rewrite /= ?up_upren_internal; f_equal; eauto.
+    all: destruct 0; rewrite /= ?up_upren_internal; by f_equal.
   Qed.
 
   Lemma tm_ids_Lemma t : t.|[ids] = t
   with
   vl_ids_Lemma v : v.[ids] = v.
   Proof.
-    all: destruct 0; rewrite /= ?up_id_internal; f_equal => //; by asimpl.
+    all: destruct 0; rewrite /= ?up_id_internal; by f_equal.
   Qed.
 
   Lemma vl_comp_rename_Lemma (ξ : var → var) (σ : var → vl) (v : vl) :
@@ -110,7 +108,7 @@ Section syn.
   tm_comp_rename_Lemma (ξ : var → var) (σ : var → vl) (t : tm) :
     (tm_rename ξ t).|[σ] = t.|[ξ >>> σ].
   Proof.
-    all: destruct 0; rewrite /= 1? up_comp_ren_subst; f_equal; eauto.
+    all: destruct 0; rewrite /= 1? up_comp_ren_subst; by f_equal.
   Qed.
 
   Lemma vl_rename_comp_Lemma (σ : var → vl) (ξ : var → var) (v : vl) :
@@ -127,7 +125,7 @@ Section syn.
   with
   tm_comp_Lemma (σ τ : var → vl) (t : tm) : t.|[σ].|[τ] = t.|[σ >> τ].
   Proof.
-    all: destruct 0; rewrite /= ? up_comp_internal; f_equal;
+    all: destruct 0; rewrite /= ? up_comp_internal; f_equal => //;
       eauto using vl_rename_comp_Lemma, vl_comp_rename_Lemma.
   Qed.
 
@@ -164,18 +162,34 @@ Section level0.
 
   Global Instance Ids_pu: Ids pu := _.
   Global Instance Rename_pu: Rename pu := _.
-  Global Instance HSubst_pu: HSubst (vl pu) pu := λ sb pr ρ, pr ρ.
+  Global Instance HSubst_pu: HSubst (vl pu) pu := λ sb pr ρ, pr (fun _ => tt).
+
+  Global Instance HSubstIdLemma_pu: HSubstIdLemma (vl pu) pu.
+  Proof.
+    rewrite /HSubstIdLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
+    intros; f_ext => c; f_equal; f_ext => /= x.
+    (* get "eta" for unit: *)
+    by destruct (c x).
+  Qed.
 
   Global Instance HSubstLemmas_pu: HSubstLemmas (vl pu) pu.
+  Proof. split => //. exact HSubstIdLemma_pu. Qed.
+
+  Global Instance HRenameLemma_pu : HRenameLemma (vl pu) pu.
+  Proof.
+    rewrite /HRenameLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
+    intros; f_ext => c; f_equal; f_ext => /= x.
+    by destruct (c (ξ x)).
+  Qed.
+
+  Global Instance HCompRenameLemma_pu : HCompRenameLemma (vl pu) pu.
   Proof. done. Qed.
 
-  Global Instance HRenameLemmas_pu: HRenameLemmas (vl pu) pu.
-  Proof.
-    split; rewrite /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=;
-    by intros; f_ext => c; f_equal; f_ext => /= x;
-    (* get "eta" for unit: *)
-    destruct (c x); destruct (c (ξ x)).
-  Qed.
+  Global Instance HRenameCompLemma_pu : HRenameCompLemma (vl pu) pu.
+  Proof. done. Qed.
+
+  Global Instance HCompLemma_pu : HCompLemma (vl pu) pu.
+  Proof. done. Qed.
 
   Global Instance pv_subst: Subst (vl pu) := _.
 End level0.
@@ -209,5 +223,11 @@ Section fake_sv.
   Qed.
 
   Global Instance HSubstLemmas_pred : HSubstLemmas fake_sv (pred fake_sv) := _.
-  Global Instance HRenameLemmas_pred : HRenameLemmas fake_sv (pred fake_sv) := _.
+  Global Instance HRenameLemma_pred : HRenameLemma fake_sv (pred fake_sv) := _.
+
+  Global Instance HCompRenameLemma_pred : HCompRenameLemma fake_sv (pred fake_sv) := _.
+
+  Global Instance HRenameCompLemma_pred : HRenameCompLemma fake_sv (pred fake_sv) := _.
+
+  Global Instance HCompLemma_pred : HCompLemma fake_sv (pred fake_sv) := _.
 End fake_sv.
