@@ -105,12 +105,14 @@ End syn.
 (* Make α explicit for syn and implicit for data constructors: *)
 Arguments syn: clear implicits.
 
+Reserved Notation "'vl'".
+
 Module withSynTypes.
   Inductive ty: Type :=
-  | TProj : syn ty vls → ty.
+  | TProj : vl → ty
+  where "'vl'" := (syn ty vls).
 
   Notation tm := (syn ty tms).
-  Notation vl := (syn ty vls).
   Implicit Types (T: ty).
 
   Global Instance Inh_ty : Inhabited ty := populate (TProj inhabitant).
@@ -192,7 +194,7 @@ End withSynTypes.
 
 Section level0.
   Definition pu := pred ().
-  Notation vl := (syn pu vls).
+  Notation "'vl'" := (syn pu vls).
   Notation tm := (syn pu tms).
 
   Global Instance Ids_pu: Ids pu := _.
@@ -232,7 +234,7 @@ End level0.
 
 Section fake_sv.
   Inductive fake_sv := | mksv: syn (pred unit) vls -> fake_sv.
-  Notation vl := (syn (pred unit) vls).
+  Notation "'vl'" := (syn (pred unit) vls).
   Notation tm := (syn (pred unit) tms).
 
   Implicit Types (sv: fake_sv).
