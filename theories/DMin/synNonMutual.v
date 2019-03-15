@@ -110,6 +110,8 @@ Reserved Notation "'vl'".
 Module withSynTypes.
   Inductive ty: Type :=
   | TProj : vl → ty
+  | TAll : ty → ty → ty
+  | TNat : ty
   where "'vl'" := (syn ty vls).
 
   Notation tm := (syn ty tms).
@@ -124,6 +126,8 @@ Module withSynTypes.
     (* let c := syn_rename : Rename tm in *)
     match T with
     | TProj v => TProj (rename sb v)
+    | TAll T1 T2 => TAll (rename sb T1) (rename (upren sb) T2)
+    | TNat => TNat
     end.
   Global Instance Rename_ty: Rename ty := ty_rename.
   Global Instance Rename_syn {s}: Rename (syn ty s) := syn_rename.
@@ -133,6 +137,8 @@ Module withSynTypes.
     let b := syn_hsubst : Subst vl in
     match T with
     | TProj v => TProj (subst sb v)
+    | TAll T1 T2 => TAll (hsubst sb T1) (hsubst (up sb) T2)
+    | TNat => TNat
     end.
 
   Global Instance HSubst_ty: HSubst vl ty := ty_hsubst.
