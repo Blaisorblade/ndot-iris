@@ -171,7 +171,8 @@ Module withSynTypes.
   Fixpoint ty_rename_comp_Lemma (σ : var → vl) (ξ : var → var) T:
       rename ξ T.|[σ] = T.|[σ >>> rename ξ].
   Proof.
-    destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal => //.
+    destruct 0; rewrite /= ?up_comp_subst_ren_internal; f_equal;
+      eauto using syn_rename_Lemma, syn_comp_rename_Lemma.
     unshelve eapply syn_rename_comp_Lemma. exact: ty_rename_comp_Lemma.
   Qed.
   Global Opaque syn_rename_comp_Lemma.
@@ -180,7 +181,7 @@ Module withSynTypes.
   Fixpoint ty_comp_Lemma (σ τ : var → vl) T:
       T.|[σ].|[τ] = T.|[σ >> τ].
   Proof.
-    destruct 0; rewrite /= ? up_comp_subst_ren_internal; f_equal => //.
+    destruct 0; rewrite /= ?up_comp_internal; f_equal; eauto using syn_rename_comp_Lemma, syn_comp_rename_Lemma.
     unshelve eapply syn_comp_Lemma. exact: ty_comp_Lemma.
   Qed.
   Global Opaque syn_comp_Lemma.
