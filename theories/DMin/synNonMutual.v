@@ -102,14 +102,10 @@ Section syn.
   Qed.
 
   Global Instance SubstLemmas_vl : SubstLemmas vl.
-  Proof.
-    split; eauto using syn_rename_Lemma, syn_ids_Lemma, syn_comp_Lemma.
-  Qed.
+  Proof. split; eauto using syn_rename_Lemma, syn_ids_Lemma, syn_comp_Lemma. Qed.
 
   Global Instance HSubstLemmas_tm : HSubstLemmas vl tm.
-  Proof.
-    split; eauto using syn_ids_Lemma, syn_comp_Lemma.
-  Qed.
+  Proof. split; eauto using syn_ids_Lemma, syn_comp_Lemma. Qed.
 End syn.
 
 Arguments syn: clear implicits.
@@ -144,7 +140,6 @@ Module withTypes.
   Global Instance HSubst_ty: HSubst vl ty := ty_hsubst.
   Global Instance HSubst_tm : HSubst vl tm := tm_hsubst.
   Global Instance Subst_vl : Subst vl := vl_subst.
-  Check @syn_rename_Lemma.
   Fixpoint ty_rename_Lemma (ξ : var → var) T : rename ξ T = T.|[ren ξ].
   Proof.
     destruct T; rewrite /= ?up_upren_internal; f_equal; eauto. unshelve eapply @syn_rename_Lemma.

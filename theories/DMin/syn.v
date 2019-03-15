@@ -160,11 +160,8 @@ Fail Inductive sv := | mksv: vl (pred sv) -> sv.
   *)
 
 Section level0.
-  (* Instance Ids_unit: Ids () := λ _, ().
-  Instance Rename_unit: Rename () := λ _ _, ().
-  Instance Subst_unit: Subst () := λ _ _, (). *)
-
   Definition pu := pred ().
+
   Global Instance Ids_pu: Ids pu := _.
   Global Instance Rename_pu: Rename pu := _.
   Global Instance HSubst_pu: HSubst (vl pu) pu := λ sb pr ρ, pr ρ.
@@ -191,13 +188,8 @@ Section fake_sv.
 
   Lemma sv_unsv sv: mksv (unsv sv) = sv.
   Proof. by destruct sv. Qed.
-  (* Lemma sv_unsv: unsv >>> mksv = id.
-  Proof. by f_ext => [[v]]/=. Qed. *)
-  (* Lemma unsv_sv v: unsv (mksv v) = v.
-  Proof. done. Qed. *)
 
   Global Instance Ids_fake_sv: Ids fake_sv := ids >>> mksv.
-  (* fun x => mksv (ids x). *)
 
   Lemma ids_unsv_ids: ids >>> unsv = ids.
   Proof. done. Qed.
