@@ -151,6 +151,14 @@ Module withSynTypes.
   Global Opaque syn_rename_Lemma.
   Instance ty_rename_Lemma' : HRenameLemma vl ty := ty_rename_Lemma.
 
+  Fixpoint ty_ids_Lemma T: T.|[ids] = T.
+  Proof.
+    destruct 0; rewrite /= ?up_id_internal; f_equal; eauto.
+    unshelve eapply syn_ids_Lemma. exact: ty_ids_Lemma.
+  Qed.
+  Global Opaque syn_ids_Lemma.
+  Instance ty_ids_Lemma' : HSubstIdLemma vl ty := ty_ids_Lemma.
+
   Fixpoint ty_comp_rename_Lemma (ξ : var → var) (σ : var → vl) T :
       (rename ξ T).|[σ] = T.|[ξ >>> σ].
   Proof.
@@ -177,14 +185,6 @@ Module withSynTypes.
   Qed.
   Global Opaque syn_comp_Lemma.
   Instance ty_comp_Lemma' : HCompLemma vl ty := ty_comp_Lemma.
-
-  Fixpoint ty_ids_Lemma T: T.|[ids] = T.
-  Proof.
-    destruct 0; rewrite /= ?up_id_internal; f_equal; eauto.
-    unshelve eapply syn_ids_Lemma. exact: ty_ids_Lemma.
-  Qed.
-  Global Opaque syn_ids_Lemma.
-  Instance ty_ids_Lemma' : HSubstIdLemma vl ty := ty_ids_Lemma.
 
   Global Instance HSubstLemmas_ty : HSubstLemmas vl ty.
   Proof.
