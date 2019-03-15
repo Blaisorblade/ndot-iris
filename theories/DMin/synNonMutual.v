@@ -102,9 +102,10 @@ Section syn.
   Proof. split; eauto using syn_ids_Lemma, syn_comp_Lemma. Qed.
 End syn.
 
+(* Make α explicit for syn and implicit for data constructors: *)
 Arguments syn: clear implicits.
 
-Module withTypes.
+Module withSynTypes.
   Inductive ty: Type :=
   | TProj : syn ty vls → ty.
 
@@ -187,4 +188,83 @@ Module withTypes.
   Proof.
     split; eauto using ty_ids_Lemma, ty_comp_Lemma.
   Qed.
-End withTypes.
+End withSynTypes.
+
+Section level0.
+  Definition pu := pred ().
+  Notation vl := (syn pu vls).
+  Notation tm := (syn pu tms).
+
+  Global Instance Ids_pu: Ids pu := _.
+  Global Instance Rename_pu: Rename pu := _.
+  Global Instance HSubst_pu: HSubst vl pu := fun sb pred ρ => pred (fun _ => tt).
+
+  Global Instance HSubstIdLemma_pu: HSubstIdLemma vl pu.
+  Proof.
+    rewrite /HSubstIdLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
+    intros; f_ext => c; f_equal; f_ext => /= x.
+    (* get "eta" for unit: *)
+    by destruct (c x).
+  Qed.
+
+  Global Instance HSubstLemmas_pu: HSubstLemmas vl pu.
+  Proof. split => //. exact HSubstIdLemma_pu. Qed.
+
+  Global Instance HRenameLemma_pu : HRenameLemma vl pu.
+  Proof.
+    rewrite /HRenameLemma.
+    rewrite /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
+    intros; f_ext => c; f_equal; f_ext => /= x.
+    by destruct (c (ξ x)).
+  Qed.
+
+  Global Instance HCompRenameLemma_pu : HCompRenameLemma vl pu.
+  Proof. done. Qed.
+
+  Global Instance HRenameCompLemma_pu : HRenameCompLemma vl pu.
+  Proof. done. Qed.
+
+  Global Instance HCompLemma_pu : HCompLemma vl pu.
+  Proof. done. Qed.
+
+  Global Instance pv_subst: Subst vl := _.
+End level0.
+
+Section fake_sv.
+  Inductive fake_sv := | mksv: syn (pred unit) vls -> fake_sv.
+  Notation vl := (syn (pred unit) vls).
+  Notation tm := (syn (pred unit) tms).
+
+  Implicit Types (sv: fake_sv).
+
+  Definition unsv '(mksv v) := v.
+
+  Lemma sv_unsv sv: mksv (unsv sv) = sv.
+  Proof. by destruct sv. Qed.
+
+  Global Instance Ids_fake_sv: Ids fake_sv := ids >>> mksv.
+
+  Lemma ids_unsv_ids: ids >>> unsv = ids.
+  Proof. done. Qed.
+  Hint Rewrite ids_unsv_ids sv_unsv: autosubst.
+
+  Global Instance Rename_fake_sv: Rename fake_sv := fun r sv => mksv (rename r (unsv sv)).
+  Global Instance Subst_fake_sv: Subst fake_sv := fun s sv => mksv (subst (s >>> unsv) (unsv sv)).
+
+  Global Instance HSubst_psv: HSubst fake_sv (pred fake_sv) := _.
+
+  Global Instance SubstLemmas_fake_sv: SubstLemmas fake_sv.
+  Proof.
+    (* Unwrap fake values and exploit SubstLemmas_vl through asimpl. *)
+    split; intros; try match goal with
+      x: fake_sv |- _ => destruct x
+    end; rewrite /Rename_fake_sv /Subst_fake_sv /=; by asimpl.
+  Qed.
+
+  Global Instance HSubstIdLemma_pred : HSubstIdLemma fake_sv (pred fake_sv) := _.
+  Global Instance HSubstLemmas_pred : HSubstLemmas fake_sv (pred fake_sv) := _.
+  Global Instance HRenameLemma_pred : HRenameLemma fake_sv (pred fake_sv) := _.
+  Global Instance HCompRenameLemma_pred : HCompRenameLemma fake_sv (pred fake_sv) := _.
+  Global Instance HRenameCompLemma_pred : HRenameCompLemma fake_sv (pred fake_sv) := _.
+  Global Instance HCompLemma_pred : HCompLemma fake_sv (pred fake_sv) := _.
+End fake_sv.
