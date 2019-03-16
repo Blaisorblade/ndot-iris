@@ -7,21 +7,24 @@ From DN Require Import autosubst_preds.
 
 Inductive sort := tms | vls.
 
+Reserved Notation "'vl'".
+Reserved Notation "'tm'".
+
 Section syn.
   Context {α: Type} {Ids_α: Ids α} {Rename_α: Rename α}.
 
   Inductive syn : sort → Type :=
-    | tv : syn vls → syn tms
-    | tapp : syn tms → syn tms → syn tms
-    | tproj : syn vls → syn tms
-    | tskip : syn tms -> syn tms
-    | var_vl : var → syn vls
-    | vnat : nat → syn vls
-    | vabs : syn tms → syn vls
-    | vpack : α → syn tms → syn vls.
+    | tv : vl → tm
+    | tapp : tm → tm → tm
+    | tproj : vl → tm
+    | tskip : tm -> tm
+    | var_vl : var → vl
+    | vnat : nat → vl
+    | vabs : tm → vl
+    | vpack : α → tm → vl
+  where "'vl'" := (syn vls)
+  and "'tm'" := (syn tms).
 
-  Notation tm := (syn tms).
-  Notation vl := (syn vls).
   Implicit Types (t: tm) (v: vl) (s: sort).
 
   Global Instance Inh_vl : Inhabited vl := populate (vnat 0).
@@ -105,16 +108,14 @@ End syn.
 (* Make α explicit for syn and implicit for data constructors: *)
 Arguments syn: clear implicits.
 
-Reserved Notation "'vl'".
-
 Module withSynTypes.
   Inductive ty: Type :=
   | TProj : vl → ty
   | TAll : ty → ty → ty
   | TNat : ty
-  where "'vl'" := (syn ty vls).
+  where "'vl'" := (syn ty vls)
+  and "'tm'" := (syn ty tms).
 
-  Notation tm := (syn ty tms).
   Implicit Types (T: ty).
 
   Global Instance Inh_ty : Inhabited ty := populate (TProj inhabitant).
@@ -202,7 +203,7 @@ End withSynTypes.
 Section level0.
   Definition pu := pred ().
   Notation "'vl'" := (syn pu vls).
-  Notation tm := (syn pu tms).
+  Notation "'tm'" := (syn pu tms).
 
   Global Instance Ids_pu: Ids pu := _.
   Global Instance Rename_pu: Rename pu := _.
@@ -242,7 +243,7 @@ End level0.
 Section fake_sv.
   Inductive fake_sv := | mksv: syn (pred unit) vls -> fake_sv.
   Notation "'vl'" := (syn (pred unit) vls).
-  Notation tm := (syn (pred unit) tms).
+  Notation "'tm'" := (syn (pred unit) tms).
 
   Implicit Types (sv: fake_sv).
 
