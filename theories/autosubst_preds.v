@@ -19,6 +19,10 @@ Section classes.
     α_rename_Lemma :
       ∀ (ξ : var → var) (a : α), rename ξ a = a.|[ren ξ].
 
+  Class HSubstIdLemma :=
+    α_hsubst_id_Lemma :
+      ∀ (a : α), a.|[ids] = a.
+
   Class HCompRenameLemma :=
     α_comp_rename_Lemma :
       ∀ (ξ : var → var) (σ : var → vl) (a: α),
@@ -34,10 +38,6 @@ Section classes.
   Class HCompLemma :=
     α_comp_Lemma :
       ∀ (σ τ : var → vl) (t : α), t.|[σ].|[τ] = t.|[σ >> τ].
-
-  Class HSubstIdLemma :=
-    α_hsubst_id_Lemma :
-      ∀ (a : α), a.|[ids] = a.
 End classes.
 
 Section composition.
@@ -52,15 +52,15 @@ Section composition.
   Global Instance Inh_pred : Inhabited pred := populate (fun _ _ => False).
   Global Instance Ids_pred : Ids pred := λ _, inhabitant.
 
-  Global Instance HSubstIdLemma_pred : HSubstIdLemma vl pred.
-  Proof.
-    rewrite /HSubstIdLemma /hsubst /HSubst_pred => //= *; f_ext => ?. by asimpl.
-  Qed.
-
   Global Instance HRenameLemma_pred : HRenameLemma vl pred.
   Proof.
     rewrite /HRenameLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
       fold (@rename _ Rename_vl); by asimpl.
+  Qed.
+
+  Global Instance HSubstIdLemma_pred : HSubstIdLemma vl pred.
+  Proof.
+    rewrite /HSubstIdLemma /hsubst /HSubst_pred => //= *; f_ext => ?. by asimpl.
   Qed.
 
   Global Instance HCompRenameLemma_pred : HCompRenameLemma vl pred := fun _ _ _ => eq_refl.

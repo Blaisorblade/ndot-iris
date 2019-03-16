@@ -164,6 +164,13 @@ Section level0.
   Global Instance Rename_pu: Rename pu := _.
   Global Instance HSubst_pu: HSubst (vl pu) pu := λ sb pr ρ, pr (fun _ => tt).
 
+  Global Instance HRenameLemma_pu : HRenameLemma (vl pu) pu.
+  Proof.
+    rewrite /HRenameLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
+    intros; f_ext => c; f_equal; f_ext => /= x.
+    by destruct (c (ξ x)).
+  Qed.
+
   Global Instance HSubstIdLemma_pu: HSubstIdLemma (vl pu) pu.
   Proof.
     rewrite /HSubstIdLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
@@ -174,13 +181,6 @@ Section level0.
 
   Global Instance HSubstLemmas_pu: HSubstLemmas (vl pu) pu.
   Proof. split => //. exact HSubstIdLemma_pu. Qed.
-
-  Global Instance HRenameLemma_pu : HRenameLemma (vl pu) pu.
-  Proof.
-    rewrite /HRenameLemma /rename /hsubst /Rename_pu /HSubst_pu /Rename_pred /HSubst_pred //=.
-    intros; f_ext => c; f_equal; f_ext => /= x.
-    by destruct (c (ξ x)).
-  Qed.
 
   Global Instance HCompRenameLemma_pu : HCompRenameLemma (vl pu) pu.
   Proof. done. Qed.
@@ -222,6 +222,7 @@ Section fake_sv.
     end; rewrite /Rename_fake_sv /Subst_fake_sv /=; by asimpl.
   Qed.
 
+  Global Instance HSubstIdLemma_pred: HSubstIdLemma fake_sv (pred fake_sv) := _.
   Global Instance HSubstLemmas_pred : HSubstLemmas fake_sv (pred fake_sv) := _.
   Global Instance HRenameLemma_pred : HRenameLemma fake_sv (pred fake_sv) := _.
 
