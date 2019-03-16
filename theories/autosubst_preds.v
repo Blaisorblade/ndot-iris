@@ -54,27 +54,30 @@ Section composition.
 
   Global Instance HRenameLemma_pred : HRenameLemma vl pred.
   Proof.
-    rewrite /HRenameLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
-      fold (@rename _ Rename_vl); by asimpl.
+    rewrite /HRenameLemma.
+    rewrite /hsubst /HSubst_pred [@rename _ Rename_pred]/rename /Rename_pred /=.
+    intros; f_ext => ?; by asimpl.
   Qed.
 
   Global Instance HSubstIdLemma_pred : HSubstIdLemma vl pred.
   Proof.
-    rewrite /HSubstIdLemma /hsubst /HSubst_pred => //= *; f_ext => ?. by asimpl.
+    rewrite /HSubstIdLemma /hsubst /HSubst_pred //= => *; f_ext => ?. by asimpl.
   Qed.
 
-  Global Instance HCompRenameLemma_pred : HCompRenameLemma vl pred := fun _ _ _ => eq_refl.
+  Global Instance HCompRenameLemma_pred : HCompRenameLemma vl pred.
+  Proof. done. Qed.
 
   Global Instance HRenameCompLemma_pred : HRenameCompLemma vl pred.
   Proof.
-    rewrite /HRenameCompLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?.
-      fold (@rename _ Rename_vl); by asimpl.
+    rewrite /HRenameCompLemma.
+    rewrite /hsubst /HSubst_pred [@rename _ Rename_pred]/rename /Rename_pred /=.
+    intros; f_ext => ?; by asimpl.
   Qed.
 
   Global Instance HCompLemma_pred : HCompLemma vl pred.
   Proof.
-    rewrite /HCompLemma /rename /hsubst /Rename_pred /HSubst_pred //=; intros; f_ext => ?;
-      by asimpl.
+    rewrite /HCompLemma /hsubst /HSubst_pred /rename /Rename_pred //=;
+    intros; f_ext => ?; by asimpl.
   Qed.
 
   Global Instance HSubstLemmas_pred : HSubstLemmas vl pred.

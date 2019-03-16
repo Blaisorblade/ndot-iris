@@ -17,7 +17,7 @@ Section syn.
     | tv : vl → tm
     | tapp : tm → tm → tm
     | tproj : vl → tm
-    | tskip : tm -> tm
+    | tskip : tm → tm
   with vl : Type :=
     | var_vl : var → vl
     | vnat : nat → vl
