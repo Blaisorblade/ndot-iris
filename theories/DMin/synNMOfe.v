@@ -136,6 +136,7 @@ Section synOfe.
     - move => n x y; elim; constructor; eauto; by apply dist_S.
   Qed.
 
-  Canonical Structure vlC: ofeT := OfeT vl (synOfeMixin vls).
-  Canonical Structure tmC: ofeT := OfeT tm (synOfeMixin tms).
+  Canonical Structure synC s: ofeT := OfeT (syn α s) (synOfeMixin s).
+  Canonical Structure vlC: ofeT := synC vls.
+  Canonical Structure tmC: ofeT := synC tms.
 End synOfe.
