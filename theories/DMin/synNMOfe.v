@@ -66,11 +66,19 @@ Section syn_relation_prop.
   Proof. split; apply _. Qed.
 
   (* A few of these instances; do we really need one per constructor? *)
+  Global Instance tv_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3) tv.
+  Proof. constructor; auto. Qed.
+  Global Instance tapp_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3 ==> sr R1 R2 R3) tapp.
+  Proof. constructor; auto. Qed.
+  Global Instance tproj_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3) tproj.
+  Proof. constructor; auto. Qed.
+  Global Instance tskip_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3) tskip.
+  Proof. constructor; auto. Qed.
   Global Instance var_vl_proper : Proper (R2 ==> sr R1 R2 R3) var_vl.
   Proof. constructor; auto. Qed.
   Global Instance vnat_proper : Proper (R3 ==> sr R1 R2 R3) vnat.
   Proof. constructor; auto. Qed.
-  Global Instance tv_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3) tv.
+  Global Instance vabs_proper : Proper (sr R1 R2 R3 ==> sr R1 R2 R3) vabs.
   Proof. constructor; auto. Qed.
   Global Instance vpack_proper : Proper (R1 ==> sr R1 R2 R3 ==> sr R1 R2 R3) vpack.
   Proof. constructor; auto. Qed.
@@ -101,8 +109,7 @@ Global Instance distSyn : ∀ {α s} `{!Dist α}, Dist (syn α s) :=
   λ α s Eα n, sr (dist n) (dist n) (dist n).
 
 Section synOfe.
-  Context {αC: ofeT}.
-  Definition α: Type := αC.
+  Context {α: ofeT}.
   Notation "'vl'" := (syn α vls).
   Notation "'tm'" := (syn α tms).
 
