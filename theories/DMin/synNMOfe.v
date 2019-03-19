@@ -162,6 +162,61 @@ Section synOfe.
   Canonical Structure synC s: ofeT := OfeT (syn α s) (synOfeMixin s).
   Canonical Structure vlC: ofeT := synC vls.
   Canonical Structure tmC: ofeT := synC tms.
+
+  (* Fail to define a COFE.
+    - Try 1: have completion only for α in vpack.
+      That's broken, since there might be α's nested elsewhere.
+    - Try 2: try traversing recursively the term in vpack (ignoring
+      other subterms for now, but they must be traversed as well).
+      That fails termination checking!
+    *)
+  Unset Program Cases.
+  Program Definition vpack_chain1 {s} (c : chain (synC s)) (a : α) : chain α :=
+    {| chain_car n := match c n return _ with vpack a' _ => a' | _ => a end |}.
+  Next Obligation. intros s c a n i ?. simpl. by destruct (chain_cauchy c n i). Qed.
+
+  Definition syn_complv1 {s} `{Cofe α} : Compl (synC s) := λ c,
+    match c 0 with
+    | vpack a t => vpack (compl (vpack_chain1 c a)) t
+    | x => x
+    end.
+(* Ugly proof sketch for syn_cofe. Comment back in to see where it fails. *)
+(*
+  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC s) :=
+    { compl := syn_complv1 }.
+  Print Cofe.
+  Next Obligation.
+    intros ?? n c; rewrite /syn_complv1.
+    feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
+    (* Require Import DN.tactics. *)
+    inversion Heq.
+    1-7: admit.
+    -
+    dependent destruction H1. dependent destruction H5.
+    rewrite -x (conv_compl n (vpack_chain1 c _)) /= -x0. f_equiv.
+    (* Unprovable *)
+  Abort.
+  Abort Obligations. *)
+
+  Program Definition vpack_chain2 {s} (c : chain (synC s)) (a : synC tms) : chain (synC tms) :=
+    {| chain_car n := match c n return _ with vpack _ t' => t' | _ => a end |}.
+  Next Obligation. intros s c a n i ?; simpl. by destruct (chain_cauchy c n i). Qed.
+
+  Fail Fixpoint syn_compl {s} `{Cofe α} : Compl (synC s) := λ c,
+    match c 0 with
+    | vpack a t => vpack (compl (vpack_chain1 c a)) (compl (vpack_chain2 c t))
+    | x => x
+    end.
+  (* Eye-balling this recursive call suggests that in fact is *is* terminating
+     and that this can be shown by well-founded induction on term size.
+     Maybe with Equations that's even convenient.
+     But avoiding that'd be nice.
+   *)
+  Fail Fixpoint syn_compl {s} `{Cofe α} : Compl (synC s) := λ c,
+    match c 0 with
+    | vpack a t => vpack (compl (vpack_chain1 c a)) (syn_compl (vpack_chain2 c t))
+    | x => x
+    end.
 End synOfe.
 Arguments synC: clear implicits.
 
