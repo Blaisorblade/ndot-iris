@@ -77,12 +77,20 @@ Section syn_relation_prop.
 
   Global Instance tv_inj : Inj (sr R1 R2 R3) (sr R1 R2 R3) tv.
   Proof. inversion_clear 1; auto. Qed.
-  Global Instance vpack_inj: Inj2 R1 (sr R1 R2 R3) (sr R1 R2 R3) vpack.
-  Proof. inversion_clear 1; auto. Qed.
   Global Instance tapp_inj: Inj2 (sr R1 R2 R3) (sr R1 R2 R3) (sr R1 R2 R3) tapp.
   Proof. inversion_clear 1; auto. Qed.
-  (* Global Instance inr_inj' : Inj R2 (sr R1 R2) inr.
-  Proof. inversion_clear 1; auto. Qed. *)
+  Global Instance tproj_inj : Inj (sr R1 R2 R3) (sr R1 R2 R3) tproj.
+  Proof. inversion_clear 1; auto. Qed.
+  Global Instance tskip_inj : Inj (sr R1 R2 R3) (sr R1 R2 R3) tskip.
+  Proof. inversion_clear 1; auto. Qed.
+  Global Instance var_vl_inj : Inj R2 (sr R1 R2 R3) var_vl.
+  Proof. inversion_clear 1; auto. Qed.
+  Global Instance vnat_inj : Inj R3 (sr R1 R2 R3) vnat.
+  Proof. inversion_clear 1; auto. Qed.
+  Global Instance vabs_inj : Inj (sr R1 R2 R3) (sr R1 R2 R3) vabs.
+  Proof. inversion_clear 1; auto. Qed.
+  Global Instance vpack_inj: Inj2 R1 (sr R1 R2 R3) (sr R1 R2 R3) vpack.
+  Proof. inversion_clear 1; auto. Qed.
 End syn_relation_prop.
 
 Global Instance equivSyn : ∀ {α s} `{!Equiv α}, Equiv (syn α s) :=
@@ -105,10 +113,14 @@ Section synOfe.
       + induction Hx => n; constructor;
         unfold dist, distSyn in *; eauto.
         by apply equiv_dist.
-      + induction (Hx 0); constructor; unfold dist, distSyn, equiv, equivSyn in *.
-        * apply IHd => n. by apply (inj _).
-        * apply IHd1 => n.
-        apply (inj _).
+      + induction (Hx 0).
+        all: try by constructor; apply equiv_dist].
+        all: try by [constructor; apply IHd => n; apply (inj _ _ _ (Hx n))].
+        * constructor; [> apply IHd1 => n | apply IHd2 => n];
+          by destruct (inj2 _ _ _ _ _ (Hx n)).
+        * constructor; [> apply equiv_dist => n | apply IHd => n];
+          by destruct (inj2 _ _ _ _ _ (Hx n)).
+    -
   Abort.
 
   (* Program Definition synC: ofeT := OfeT vl _. *)
