@@ -108,6 +108,29 @@ Global Instance equivSyn : ∀ {α s} `{!Equiv α}, Equiv (syn α s) :=
 Global Instance distSyn : ∀ {α s} `{!Dist α}, Dist (syn α s) :=
   λ α s Eα n, sr (dist n) (dist n) (dist n).
 
+Section syn_map.
+  Context {α β: Type}.
+
+  Fixpoint syn_map {s} (f: α → β) (ast: syn α s): syn β s :=
+    match ast with
+    | tv v => tv (syn_map f v)
+    | tapp t1 t2 => tapp (syn_map f t1) (syn_map f t2)
+    | tproj v => tproj (syn_map f v)
+    | tskip t => tskip (syn_map f t)
+    | var_vl x => var_vl x
+    | vnat n => vnat n
+    | vabs t => vabs (syn_map f t)
+    | vpack a t => vpack (f a) (syn_map f t)
+    end.
+  Arguments syn_map {_} _ !_ / : assert.
+  Instance syn_map_inj {s} (f: α → β):
+    Inj (=) (=) f → Inj (=) (=) (@syn_map s f).
+  Proof.
+    intros HinjF x y; induction x; dependent destruction y; intros [=];
+      f_equal; auto.
+  Qed.
+End syn_map.
+
 Section synOfe.
   Context {α: ofeT}.
   Notation "'vl'" := (syn α vls).
@@ -140,3 +163,34 @@ Section synOfe.
   Canonical Structure vlC: ofeT := synC vls.
   Canonical Structure tmC: ofeT := synC tms.
 End synOfe.
+Arguments synC: clear implicits.
+
+Instance syn_map_ne {A A' : ofeT} {s} n :
+  Proper ((dist n ==> dist n) ==>
+           dist n ==> dist n) (@syn_map A A' s).
+Proof. induction 2; cbn; constructor; eauto. Qed.
+
+Definition synC_map {A A' s} (f : A -n> A') :
+  synC A s -n> synC A' s := CofeMor (syn_map f).
+Instance synC_map_ne {A A' s} :
+  NonExpansive (@synC_map A A' s).
+Proof. intros ???? ast; induction ast; cbn; constructor; eauto. Qed.
+
+Program Definition synCF (F : cFunctor) s: cFunctor := {|
+  cFunctor_car A B := synC (cFunctor_car F A B) s;
+  cFunctor_map A1 A2 B1 B2 fg :=
+    synC_map (cFunctor_map F fg)
+|}.
+Next Obligation.
+  intros ?? A1 A2 B1 B2 n ???; by apply synC_map_ne; apply cFunctor_ne.
+Qed.
+Next Obligation. induction 0; cbn; f_equiv; eauto using cFunctor_id. Qed.
+Next Obligation. induction 0; cbn; f_equiv; eauto using cFunctor_compose. Qed.
+
+Instance synCF_contractive F s:
+  cFunctorContractive F →
+  cFunctorContractive (synCF F s).
+Proof.
+  intros ?? A1 A2 B1 B2 n ???;
+    by apply synC_map_ne; apply cFunctor_contractive.
+Qed.
