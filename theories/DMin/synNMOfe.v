@@ -107,7 +107,8 @@ Section synOfe.
   Global Instance tv_ne: NonExpansive (@tv α) := _.
   Global Instance vpack_ne: NonExpansive2 (@vpack α) := _.
 
-  Definition vlOfeMixin s : OfeMixin (syn α s).
+  Definition synOfeMixin s : OfeMixin (syn α s).
+  Proof.
     split.
     - move => x y; split => Hx.
       + induction Hx => n; constructor;
@@ -120,8 +121,10 @@ Section synOfe.
           by destruct (inj2 _ _ _ _ _ (Hx n)).
         * constructor; [> apply equiv_dist => n | apply IHd => n];
           by destruct (inj2 _ _ _ _ _ (Hx n)).
-    -
-  Abort.
+    - apply _.
+    - move => n x y; elim; constructor; eauto; by apply dist_S.
+  Qed.
 
-  (* Program Definition synC: ofeT := OfeT vl _. *)
+  Canonical Structure vlC: ofeT := OfeT vl (synOfeMixin vls).
+  Canonical Structure tmC: ofeT := OfeT tm (synOfeMixin tms).
 End synOfe.
