@@ -117,8 +117,10 @@ Section synOfe.
       + induction (Hx 0).
         all: try by constructor; apply equiv_dist].
         all: try by [constructor; apply IHd => n; apply (inj _ _ _ (Hx n))].
-        * constructor; [> apply IHd1 => n | apply IHd2 => n];
-          by destruct (inj2 _ _ _ _ _ (Hx n)).
+        * constructor; [> apply IHd1 => n | apply IHd2 => n].
+          (* This seems to busy-loop? *)
+          (* destruct (inj2 _ _ _ _ (Hx n)). *)
+          all: by destruct (inj2 _ _ _ _ _ (Hx n)).
         * constructor; [> apply equiv_dist => n | apply IHd => n];
           by destruct (inj2 _ _ _ _ _ (Hx n)).
     - apply _.
