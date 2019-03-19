@@ -95,6 +95,8 @@ End syn_relation_prop.
 
 Global Instance equivSyn : ∀ {α s} `{!Equiv α}, Equiv (syn α s) :=
   λ α s Eα, sr (≡) (≡) (≡).
+(* Beware we keep the same n for Rα. I expect we'll use [α = Next ...] for
+   OFEs. *)
 Global Instance distSyn : ∀ {α s} `{!Dist α}, Dist (syn α s) :=
   λ α s Eα n, sr (dist n) (dist n) (dist n).
 
