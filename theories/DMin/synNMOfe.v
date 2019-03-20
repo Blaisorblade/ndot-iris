@@ -273,5 +273,5 @@ Instance synCF_contractive F s:
   cFunctorContractive (synCF F s).
 Proof.
   intros ?? A1 A2 B1 B2 n ???;
-    by apply synC_map_ne; apply cFunctor_contractive.
+    by apply synC_map_ne, cFunctor_contractive.
 Qed.
