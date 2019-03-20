@@ -147,7 +147,7 @@ Section synOfe.
         unfold dist, distSyn in *; eauto.
         by apply equiv_dist.
       + induction (Hx 0).
-        all: try by constructor; apply equiv_dist].
+        all: try by constructor; apply equiv_dist.
         all: try by [constructor; apply IHd => n; apply (inj _ _ _ (Hx n))].
         * constructor; [> apply IHd1 => n | apply IHd2 => n].
           (* This seems to busy-loop? *)
@@ -162,7 +162,11 @@ Section synOfe.
   Canonical Structure synC s: ofeT := OfeT (syn α s) (synOfeMixin s).
   Canonical Structure vlC: ofeT := synC vls.
   Canonical Structure tmC: ofeT := synC tms.
-
+End synOfe.
+Arguments synC: clear implicits.
+Arguments tmC: clear implicits.
+Arguments vlC: clear implicits.
+Unset Program Cases.
   (* Fail to define a COFE.
     - Try 1: have completion only for α in vpack.
       That's broken, since there might be α's nested elsewhere.
@@ -170,19 +174,38 @@ Section synOfe.
       other subterms for now, but they must be traversed as well).
       That fails termination checking!
     *)
-  Unset Program Cases.
-  Program Definition vpack_chain1 {s} (c : chain (synC s)) (a : α) : chain α :=
-    {| chain_car n := match c n return _ with vpack a' _ => a' | _ => a end |}.
-  Next Obligation. intros s c a n i ?. simpl. by destruct (chain_cauchy c n i). Qed.
+Program Definition vpack_1_inv {α: ofeT} {s} (a : α) : synC α s -n> α := λne ast,
+  match ast return _ with vpack a' _ => a' | _ => a end.
+Next Obligation. solve_proper. Qed.
+Program Definition vpack_2_inv {α: ofeT} {s} (t : tmC α) : synC α s -n> tmC α := λne ast,
+  match ast with vpack _ t' => t' | _ => t end.
+Next Obligation. solve_proper. Qed.
 
-  Definition syn_complv1 {s} `{Cofe α} : Compl (synC s) := λ c,
+Module synCofeV1.
+Section synCofe.
+  Context {α: ofeT}.
+
+  Program Definition vpack_chain1 {s} (c : chain (synC α s)) (a : α) : chain α :=
+    chain_map (vpack_1_inv a) c.
+  Program Definition vpack_chain1_alt {s} (c : chain (synC α s)) (a : α) : chain α :=
+    {| chain_car n := match c n return _ with vpack a' _ => a' | _ => a end |}.
+  Next Obligation.
+    intros s c a n i ?.
+    (* by apply (ofe_mor_ne _ _ (vpack_1_inv a)), chain_cauchy. *)
+    by simpl; destruct (chain_cauchy c n i).
+  Qed.
+  Lemma vpack_chain1s_eq s c a: chain_car (@vpack_chain1_alt s c a) =
+    chain_car (@vpack_chain1 s c a).
+  Proof. done. Qed.
+
+  Definition syn_complv1 {s} `{Cofe α} : Compl (synC α s) := λ c,
     match c 0 with
     | vpack a t => vpack (compl (vpack_chain1 c a)) t
     | x => x
     end.
 (* Ugly proof sketch for syn_cofe. Comment back in to see where it fails. *)
-(*
-  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC s) :=
+
+  (* Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC α s) :=
     { compl := syn_complv1 }.
   Print Cofe.
   Next Obligation.
@@ -198,7 +221,7 @@ Section synOfe.
   Abort.
   Abort Obligations. *)
 
-  Program Definition vpack_chain2 {s} (c : chain (synC s)) (a : synC tms) : chain (synC tms) :=
+  Program Definition vpack_chain2 {s} (c : chain (synC α s)) (a : tmC α) : chain (tmC α) :=
     {| chain_car n := match c n return _ with vpack _ t' => t' | _ => a end |}.
   Next Obligation. intros s c a n i ?; simpl. by destruct (chain_cauchy c n i). Qed.
 
@@ -217,9 +240,85 @@ Section synOfe.
     | vpack a t => vpack (compl (vpack_chain1 c a)) (syn_compl (vpack_chain2 c t))
     | x => x
     end.
-End synOfe.
-Arguments synC: clear implicits.
 
+  Fail Fixpoint syn_compl {s} `{Cofe α} (c: chain (synC s)) {struct c}: synC s :=
+    match c 0 with
+    | vpack a t => vpack (compl (vpack_chain1 c a)) (syn_compl (vpack_chain2 c t))
+    | x => x
+    end.
+
+  (* Instead of the above, we can write syn_compl
+     by recursion on (c 0); when we get to an alpha, we
+     take the limit. One way is in CPS, but maybe that's overkill?
+     *)
+  Fixpoint syn_traverse {s s'} `{Cofe α}
+    (ast: synC α s)
+    (k: synC α s' -n> synC α s): chain (synC α s') -> synC α s := λ c,
+    match ast with
+    | vpack a t =>
+      vpack
+        (compl (chain_map (vpack_1_inv a ◎ k) c))
+        (syn_traverse t (vpack_2_inv t ◎ k) c)
+    | x => x
+    end.
+  Definition syn_compl {s} `{Cofe α} : Compl (synC α s) := λ c,
+    syn_traverse (c 0) cid c.
+  (* This one isn't as obviously false. *)
+  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC α s) :=
+    { compl := syn_compl }.
+  Print Cofe.
+  Next Obligation.
+    intros ?? n c; rewrite /syn_compl.
+    feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
+    (* Require Import DN.tactics. *)
+    inversion Heq.
+    1-7: admit.
+    -
+    dependent destruction H1. dependent destruction H5.
+    rewrite -x /= conv_compl /= -x0. f_equiv.
+  Abort.
+  Admit Obligations.
+End synCofe.
+End synCofeV1.
+Module synCofeV2.
+Section synCofe.
+  Context {α: ofeT}.
+
+  (* No need for CPS. But which one is easier in proofs? Let's check. *)
+  Fixpoint syn_traverse {s} `{Cofe α}
+    (ast: synC α s) : Compl (synC α s) := λ c,
+    match ast with
+    | vpack a t =>
+      vpack
+        (compl (chain_map (vpack_1_inv a) c))
+        (syn_traverse t (chain_map (vpack_2_inv t) c))
+    | x => x
+    end.
+  Definition syn_compl {s} `{Cofe α} : Compl (synC α s) := λ c,
+    syn_traverse (c 0) c.
+  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC α s) :=
+    { compl := syn_compl }.
+  Next Obligation.
+    intros ?? n c; rewrite /syn_compl.
+    feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
+    remember (c 0) as ci. clear Heqci.
+    generalize dependent c.
+    induction ci; intros.
+    1-7: admit.
+    (* To be able to prove these clauses, we must fix the
+    other clauses of syn_traverse. *)
+    -
+    inversion Heq; subst.
+    dependent destruction H0.
+    rewrite -x /= conv_compl /= -x. f_equiv.
+    (* set x0 := chain_map (vpack_2_inv ci) c. *)
+    have Heq': t1 ≡{n}≡ chain_car (chain_map (vpack_2_inv ci) c) n.
+    by rewrite /= -x.
+    rewrite Heq'. eapply IHci.
+    rewrite /= -/(vpack_2_inv ci (c n)) Heq //=.
+  Admitted.
+End synCofe.
+End synCofeV2.
 Instance syn_map_ne {A A' : ofeT} {s} n :
   Proper ((dist n ==> dist n) ==>
            dist n ==> dist n) (@syn_map A A' s).
