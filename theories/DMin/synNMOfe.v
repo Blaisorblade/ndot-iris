@@ -162,24 +162,40 @@ Section synOfe.
   Canonical Structure synC s: ofeT := OfeT (syn α s) (synOfeMixin s).
   Canonical Structure vlC: ofeT := synC vls.
   Canonical Structure tmC: ofeT := synC tms.
+  Unset Program Cases.
+
+  Program Definition tv_inv {s} (v : vlC) : synC s -n> vlC := λne ast,
+    match ast with tv v' => v' | _ => v end.
+  Next Obligation. solve_proper. Qed.
+
+  Program Definition tapp_1_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+    match ast with tapp t' _ => t' | _ => t end.
+  Next Obligation. solve_proper. Qed.
+  Program Definition tapp_2_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+    match ast with tapp _ t' => t' | _ => t end.
+  Next Obligation. solve_proper. Qed.
+
+  Program Definition tproj_inv {s} (v : vlC) : synC s -n> vlC := λne ast,
+    match ast with tproj v' => v' | _ => v end.
+  Next Obligation. solve_proper. Qed.
+  Program Definition tskip_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+    match ast with tskip t' => t' | _ => t end.
+  Next Obligation. solve_proper. Qed.
+
+  Program Definition vpack_1_inv {s} (a : α) : synC s -n> α := λne ast,
+    match ast with vpack a' _ => a' | _ => a end.
+  Next Obligation. solve_proper. Qed.
+  Program Definition vpack_2_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+    match ast with vpack _ t' => t' | _ => t end.
+  Next Obligation. solve_proper. Qed.
+  Program Definition vabs_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+    match ast with vabs t' => t' | _ => t end.
+  Next Obligation. solve_proper. Qed.
+
 End synOfe.
 Arguments synC: clear implicits.
 Arguments tmC: clear implicits.
 Arguments vlC: clear implicits.
-Unset Program Cases.
-  (* Fail to define a COFE.
-    - Try 1: have completion only for α in vpack.
-      That's broken, since there might be α's nested elsewhere.
-    - Try 2: try traversing recursively the term in vpack (ignoring
-      other subterms for now, but they must be traversed as well).
-      That fails termination checking!
-    *)
-Program Definition vpack_1_inv {α: ofeT} {s} (a : α) : synC α s -n> α := λne ast,
-  match ast return _ with vpack a' _ => a' | _ => a end.
-Next Obligation. solve_proper. Qed.
-Program Definition vpack_2_inv {α: ofeT} {s} (t : tmC α) : synC α s -n> tmC α := λne ast,
-  match ast with vpack _ t' => t' | _ => t end.
-Next Obligation. solve_proper. Qed.
 
 Section synCofe.
   Context {α: ofeT}.
@@ -187,15 +203,26 @@ Section synCofe.
   (* We must write syn_compl
      by recursion on (c 0); when we get to an alpha, we
      take the limit. *)
-
+  Implicit Types (t: tmC α) (v: vlC α) (s: sort).
   Fixpoint syn_traverse {s} `{Cofe α}
     (ast: synC α s) : Compl (synC α s) := λ c,
     match ast with
-    | vpack a t =>
-      vpack
+    | tv v => tv
+        (syn_traverse v (chain_map (tv_inv v) c))
+    | tapp t1 t2 => tapp
+        (syn_traverse t1 (chain_map (tapp_1_inv t1) c))
+        (syn_traverse t2 (chain_map (tapp_2_inv t2) c))
+    | tproj v => tproj
+        (syn_traverse v (chain_map (tproj_inv v) c))
+    | tskip t => tskip
+        (syn_traverse t (chain_map (tskip_inv t) c))
+    | vabs t => vabs
+        (syn_traverse t (chain_map (vabs_inv t) c))
+    | vpack a t => vpack
         (compl (chain_map (vpack_1_inv a) c))
         (syn_traverse t (chain_map (vpack_2_inv t) c))
-    | x => x
+    | var_vl i => var_vl i
+    | vnat n => vnat n
     end.
 
   Definition syn_compl {s} `{Cofe α} : Compl (synC α s) := λ c,
@@ -205,22 +232,23 @@ Section synCofe.
   Next Obligation.
     intros ?? n c; rewrite /syn_compl.
     feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
-    remember (c 0) as ci. clear Heqci.
-    generalize dependent c.
-    induction ci; intros.
-    1-7: admit.
-    (* To be able to prove these clauses, we must fix the
-    other clauses of syn_traverse. *)
-    -
-    inversion Heq; subst.
-    dependent destruction H0.
-    rewrite -x /= conv_compl /= -x. f_equiv.
-    (* set x0 := chain_map (vpack_2_inv ci) c. *)
-    have Heq': t1 = chain_car (chain_map (vpack_2_inv ci) c) n.
-    by rewrite /= -x.
-    rewrite Heq'. eapply IHci.
-    rewrite /= -/(vpack_2_inv ci (c n)) Heq //=.
-  Admitted.
+    move: (c 0) Heq => ci.
+    induction ci; intros; inversion Heq; subst;
+    dependent destruction H0; rewrite -x /= ?conv_compl /= -?x; try by f_equiv.
+    - have -> : v1 = chain_car (chain_map (tv_inv ci) c) n. by rewrite /= -x.
+      f_equiv; eapply IHci. by rewrite /= -/(tv_inv ci (c n)) Heq.
+    - have -> : ta1 = chain_car (chain_map (tapp_1_inv ci1) c) n. by rewrite /= -x.
+      have -> : tb1 = chain_car (chain_map (tapp_2_inv ci2) c) n. by rewrite /= -x.
+      f_equiv; [eapply IHci1|eapply IHci2]; by rewrite /= -/(tapp_1_inv ci1 (c n)) -/(tapp_2_inv ci2 (c n)) Heq.
+    - have ->: v1 = chain_car (chain_map (tproj_inv ci) c) n. by rewrite /= -x.
+      f_equiv; eapply IHci. by rewrite /= -/(tproj_inv ci (c n)) Heq.
+    - have ->: t1 = chain_car (chain_map (tskip_inv ci) c) n. by rewrite /= -x.
+      f_equiv; eapply IHci. by rewrite /= -/(tskip_inv ci (c n)) Heq.
+    - have ->: t1 = chain_car (chain_map (vabs_inv ci) c) n. by rewrite /= -x.
+      f_equiv; eapply IHci. by rewrite /= -/(vabs_inv ci (c n)) Heq.
+    - have ->: t1 = chain_car (chain_map (vpack_2_inv ci) c) n. by rewrite /= -x.
+      f_equiv; eapply IHci. by rewrite /= -/(vpack_2_inv ci (c n)) Heq.
+  Qed.
 End synCofe.
 
 Instance syn_map_ne {A A' : ofeT} {s} n :
