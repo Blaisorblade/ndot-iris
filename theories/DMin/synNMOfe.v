@@ -230,18 +230,12 @@ Section synCofe.
     { compl := syn_compl }.
   Next Obligation.
     intros ?? n c; rewrite /syn_compl.
-    feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
+    unshelve epose proof (chain_cauchy c 0 n _) as Heq; first by lia.
     move: (c 0) Heq => ci; move Heq2: (c n) => cn.
-    induction ci; intros; inversion Heq; subst;
-    dependent destruction H0; rewrite -x /= ?conv_compl /= -?x;
-    f_equiv => //; (apply IHci||apply IHci1||apply IHci2); try by rewrite /= -x.
-    - move: (ofe_mor_ne _ _ (tv_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (tapp_1_inv ci1) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (tapp_2_inv ci2) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (tproj_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (tskip_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (vabs_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
-    - move: (ofe_mor_ne _ _ (vpack_2_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
+    (* XXX Ugly, but not sure what to do about it. *)
+    induction ci; intros; inversion Heq; simplify_eq; move: H0 => Hcn;
+      rewrite /= ?conv_compl /= -?Hcn; f_equiv => //;
+      (apply IHci||apply IHci1||apply IHci2); by rewrite //= -Hcn.
   Qed.
 End synCofe.
 

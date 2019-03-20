@@ -7,6 +7,10 @@ From DN Require Import autosubst_preds.
 
 Inductive sort := tms | vls.
 
+(** Used by simplify_eq! *)
+Instance: EqDecision sort.
+Proof. move=>??; rewrite /Decision; decide equality. Qed.
+
 Reserved Notation "'vl'".
 Reserved Notation "'tm'".
 
