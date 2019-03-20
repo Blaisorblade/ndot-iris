@@ -29,6 +29,11 @@ Section syn.
 
   Global Instance Inh_vl : Inhabited vl := populate (vnat 0).
   Global Instance Inh_tm : Inhabited tm := populate (tv inhabitant).
+  Global Instance Inh_syn s : Inhabited (syn s) := populate
+    match s as s' return syn s' with
+    | tms => inhabitant
+    | vls => inhabitant
+    end.
 
   Global Instance Ids_vl : Ids vl.
   Proof. by constructor. Defined.

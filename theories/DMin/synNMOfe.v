@@ -1,11 +1,10 @@
 From Autosubst Require Export Autosubst.
 From stdpp Require Import base.
 From Coq.ssr Require Import ssreflect.
-From iris.algebra Require Import base.
+From iris.algebra Require Import base ofe.
+From iris.base_logic Require Export iprop.
 
 From DN Require Import autosubst_preds DMin.synNonMutual.
-
-From iris.algebra Require Import ofe.
 
 Section syn_relation.
   Context `{α : Type}.
@@ -275,3 +274,28 @@ Proof.
   intros ?? A1 A2 B1 B2 n ???;
     by apply synC_map_ne, cFunctor_contractive.
 Qed.
+
+Section semanticSyntax.
+  Context {Σ : gFunctors}. (* Look ma', no requirements! *)
+  Definition semSyn s: cFunctor := (synCF ((▶ ∙) -n> iProp Σ) s)%CF.
+  Import cofe_solver.
+  Global Instance Ihn_semsyn s : Inhabited ((semSyn s) unitC) := _.
+
+  Definition semSyn_result s:
+    solution (semSyn s) := solver.result _.
+  Definition iPreSyn s: ofeT := semSyn_result s.
+  Definition iSyn s : ofeT := (synC (laterC (iPreSyn s) -n> iProp Σ) s).
+  (* Not sure how to test this. We probably need something like
+    the iPreProp - iProp game to be able to apply a nested semantic type
+    to a value.
+    AKA, I cargo-culted the code in iprop.v except for
+    https://gitlab.mpi-sws.org/iris/iris/blob/82e7e2ef749e4f25af0fa14d27d01d624bb9cbd6/theories/base_logic/lib/iprop.v#L154-158
+  *)
+  Definition iSyn_unfold {s} : iSyn s -n> iPreSyn s :=
+    solution_fold (semSyn_result s).
+  Definition iSyn_fold {s} : iPreSyn s -n> iSyn s := solution_unfold _.
+  Lemma iSyn_fold_unfold {s} (P : iSyn s) : iSyn_fold (iSyn_unfold P) ≡ P.
+  Proof. apply solution_unfold_fold. Qed.
+  Lemma iSyn_unfold_fold {s} (P : iPreSyn s) : iSyn_unfold (iSyn_fold P) ≡ P.
+  Proof. apply solution_fold_unfold. Qed.
+End semanticSyntax.
