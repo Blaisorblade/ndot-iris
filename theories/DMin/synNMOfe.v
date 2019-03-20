@@ -232,22 +232,17 @@ Section synCofe.
   Next Obligation.
     intros ?? n c; rewrite /syn_compl.
     feed pose proof (chain_cauchy c 0 n) as Heq; first by auto with lia.
-    move: (c 0) Heq => ci.
+    move: (c 0) Heq => ci; move Heq2: (c n) => cn.
     induction ci; intros; inversion Heq; subst;
-    dependent destruction H0; rewrite -x /= ?conv_compl /= -?x; try by f_equiv.
-    - have -> : v1 = chain_car (chain_map (tv_inv ci) c) n. by rewrite /= -x.
-      f_equiv; eapply IHci. by rewrite /= -/(tv_inv ci (c n)) Heq.
-    - have -> : ta1 = chain_car (chain_map (tapp_1_inv ci1) c) n. by rewrite /= -x.
-      have -> : tb1 = chain_car (chain_map (tapp_2_inv ci2) c) n. by rewrite /= -x.
-      f_equiv; [eapply IHci1|eapply IHci2]; by rewrite /= -/(tapp_1_inv ci1 (c n)) -/(tapp_2_inv ci2 (c n)) Heq.
-    - have ->: v1 = chain_car (chain_map (tproj_inv ci) c) n. by rewrite /= -x.
-      f_equiv; eapply IHci. by rewrite /= -/(tproj_inv ci (c n)) Heq.
-    - have ->: t1 = chain_car (chain_map (tskip_inv ci) c) n. by rewrite /= -x.
-      f_equiv; eapply IHci. by rewrite /= -/(tskip_inv ci (c n)) Heq.
-    - have ->: t1 = chain_car (chain_map (vabs_inv ci) c) n. by rewrite /= -x.
-      f_equiv; eapply IHci. by rewrite /= -/(vabs_inv ci (c n)) Heq.
-    - have ->: t1 = chain_car (chain_map (vpack_2_inv ci) c) n. by rewrite /= -x.
-      f_equiv; eapply IHci. by rewrite /= -/(vpack_2_inv ci (c n)) Heq.
+    dependent destruction H0; rewrite -x /= ?conv_compl /= -?x;
+    f_equiv => //; (apply IHci||apply IHci1||apply IHci2); try by rewrite /= -x.
+    - move: (ofe_mor_ne _ _ (tv_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (tapp_1_inv ci1) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (tapp_2_inv ci2) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (tproj_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (tskip_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (vabs_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
+    - move: (ofe_mor_ne _ _ (vpack_2_inv ci) _ _ _ Heq) => /= <-. by rewrite -x.
   Qed.
 End synCofe.
 
