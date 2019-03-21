@@ -271,25 +271,39 @@ Qed.
 
 Section semanticSyntax.
   Context {Σ : gFunctors}. (* Look ma', no requirements! *)
-  Definition semSyn s: cFunctor := (synCF ((▶ ∙) -n> iProp Σ) s)%CF.
+  Definition semVls: cFunctor := (synCF ((▶ ∙) -n> iProp Σ) vls)%CF.
   Import cofe_solver.
-  Global Instance Ihn_semsyn s : Inhabited ((semSyn s) unitC) := _.
 
-  Definition semSyn_result s:
-    solution (semSyn s) := solver.result _.
-  Definition iPreSyn s: ofeT := semSyn_result s.
-  Definition iSyn s : ofeT := (synC (laterC (iPreSyn s) -n> iProp Σ) s).
-  (* Not sure how to test this. We probably need something like
-    the iPreProp - iProp game to be able to apply a nested semantic type
-    to a value.
-    AKA, I cargo-culted the code in iprop.v except for
-    https://gitlab.mpi-sws.org/iris/iris/blob/82e7e2ef749e4f25af0fa14d27d01d624bb9cbd6/theories/base_logic/lib/iprop.v#L154-158
+  Definition semVls_result:
+    solution semVls := solver.result _.
+  Definition iPreVl: ofeT := semVls_result.
+  Definition iSyn s : ofeT := (synC (laterC iPreVl -n> iProp Σ) s).
+  (*
+  Inspired from code in
+  https://gitlab.mpi-sws.org/iris/iris/blob/82e7e2ef749e4f25af0fa14d27d01d624bb9cbd6/theories/base_logic/lib/iprop.v#L133-150
   *)
-  Definition iSyn_unfold {s} : iSyn s -n> iPreSyn s :=
-    solution_fold (semSyn_result s).
-  Definition iSyn_fold {s} : iPreSyn s -n> iSyn s := solution_unfold _.
-  Lemma iSyn_fold_unfold {s} (P : iSyn s) : iSyn_fold (iSyn_unfold P) ≡ P.
+  Definition iSyn_unfold : iSyn vls -n> iPreVl :=
+    solution_fold semVls_result.
+  Definition iSyn_fold : iPreVl -n> iSyn vls := solution_unfold _.
+  Lemma iSyn_fold_unfold (P : iSyn vls) : iSyn_fold (iSyn_unfold P) ≡ P.
   Proof. apply solution_unfold_fold. Qed.
-  Lemma iSyn_unfold_fold {s} (P : iPreSyn s) : iSyn_unfold (iSyn_fold P) ≡ P.
+  Lemma iSyn_unfold_fold (P : iPreVl) : iSyn_unfold (iSyn_fold P) ≡ P.
   Proof. apply solution_fold_unfold. Qed.
+  Notation "'vl'" := (iSyn vls).
+  Notation "'tm'" := (iSyn tms).
+  (* Check that values contain terms. *)
+  Definition _test (v: vl) (t: tm) : iProp Σ :=
+    (∃ Φ t, v ≡ vpack Φ t)%I.
+
+  Program Definition unpack:
+    (laterC iPreVl -n> iProp Σ) -n> vl -n> iProp Σ :=
+    λne Φ v, Φ (Next (iSyn_unfold v)).
+  Solve All Obligations with solve_proper.
+
+  (* Semantic types! *)
+  Notation D := (vl -n> iProp Σ).
+  (* First semantic type! *)
+  Program Definition proj2: vl -n> D :=
+    λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ ▷ unpack Φ w)%I.
+  Solve All Obligations with solve_proper.
 End semanticSyntax.
