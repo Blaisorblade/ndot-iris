@@ -291,17 +291,31 @@ Section semanticSyntax.
   Proof. apply solution_fold_unfold. Qed.
   Notation "'vl'" := (iSyn vls).
   Notation "'tm'" := (iSyn tms).
+  (* Semantic types! *)
+  Notation D := (vl -n> iProp Σ).
+
   (* Check that values contain terms. *)
   Definition _test (v: vl) (t: tm) : iProp Σ :=
     (∃ Φ t, v ≡ vpack Φ t)%I.
 
   Program Definition unpack:
-    (laterC iPreVl -n> iProp Σ) -n> vl -n> iProp Σ :=
+    (laterC iPreVl -n> iProp Σ) -n> D :=
     λne Φ v, Φ (Next (iSyn_unfold v)).
   Solve All Obligations with solve_proper.
 
-  (* Semantic types! *)
-  Notation D := (vl -n> iProp Σ).
+  (** Note that here we get an extra later when we *pack*
+      predicates (so that we can pass them to vpack). *)
+  Program Definition pack:
+    D -n> (laterC iPreVl -n> iProp Σ) :=
+      λne Φ '(Next w), (▷ Φ (iSyn_fold w))%I.
+  Next Obligation. intros**???. solve_contractive. Qed.
+  Next Obligation. intros**???. solve_proper. Qed.
+
+  Lemma unpack_pack Φ v: unpack (pack Φ) v ≡ (▷ Φ v)%I.
+  Proof. by rewrite /= iSyn_fold_unfold. Qed.
+  Lemma pack_unpack Φ v: pack (unpack Φ) v ≡ (▷ Φ v)%I.
+  Proof. by rewrite /= iSyn_unfold_fold. Qed.
+
   (* First semantic type! *)
   Program Definition proj2: vl -n> D :=
     λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ □ unpack Φ w)%I.
