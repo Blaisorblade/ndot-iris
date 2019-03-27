@@ -304,6 +304,6 @@ Section semanticSyntax.
   Notation D := (vl -n> iProp Σ).
   (* First semantic type! *)
   Program Definition proj2: vl -n> D :=
-    λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ ▷ unpack Φ w)%I.
+    λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ □ unpack Φ w)%I.
   Solve All Obligations with solve_proper.
 End semanticSyntax.
