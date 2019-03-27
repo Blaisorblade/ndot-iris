@@ -342,6 +342,7 @@ Section semanticSyntax.
 
   Definition russellV : vl := vpack (pack russellP) inhabitant.
 
+  (** ofe_flip and ofe_apply are defined to pass to f_equiv. *)
   Program Definition ofe_flip {A B C: ofeT}:
     (A -n> B -n> C) -n> B -n> A -n> C :=
     λne f b a, f a b.
@@ -351,20 +352,27 @@ Section semanticSyntax.
     λne f a, f a.
   Solve All Obligations with solve_proper.
 
+  Lemma unpack_lemma w φ φ' t t':
+    (vpack (pack φ) t ≡ vpack φ' t' -∗
+    unpack φ' w ≡ ▷ φ w)%I: iProp Σ.
+  Proof.
+    rewrite -unpack_pack. iIntros "Heq".
+    (* unshelve iApply (f_equiv (λne P, unpack P w)); [> solve_proper | apply _ | idtac ]. *)
+    iApply (f_equiv (ofe_flip ofe_apply w)). iApply f_equiv.
+    iApply (f_equiv (vpack_1_inv inhabitant) (vpack φ' t') (vpack (pack φ) t)).
+    by iRewrite "Heq".
+  Qed.
+
   (* Taken from another  *)
   Lemma later_not_selfApp: selfApp russellV -∗ ▷ False.
   Proof.
-    iIntros "#Hvav0"; iAssert (□ ▷ russellP russellV)%I as "#Hvav"; last iClear "Hvav0".
-    - iDestruct "Hvav0" as (φ t) "[Heq Hvav1]".
-      iAssert (unpack φ russellV ≡ ▷ russellP russellV)%I as "#Heq2"; last by iRewrite -"Heq2".
-      rewrite -unpack_pack. iApply internal_eq_sym.
-      iApply (f_equiv (ofe_flip ofe_apply russellV)). iApply (f_equiv unpack).
-      by iApply (f_equiv (vpack_1_inv inhabitant) russellV (vpack φ t)).
-    - iApply "Hvav". iNext; iExists _, _; iSplit => //.
-      by rewrite unpack_pack.
+    iIntros "#Hvav"; iDestruct "Hvav" as (φ t) "[Heq Hvav]".
+    iRewrite (unpack_lemma russellV with "Heq") in "Hvav".
+    iApply "Hvav". iNext; iExists _, _; iSplit => //.
+    by rewrite unpack_pack.
   Qed.
 
-  Lemma selfAppEquiv: ((▷ ¬selfApp russellV) ∗-∗ selfApp russellV)%I.
+  Lemma selfAppEquiv: ((▷ ¬ selfApp russellV) ∗-∗ selfApp russellV)%I.
   Proof.
     iSplit.
     - iIntros "#HnotVAV"; iExists _, _; iSplit => //.
@@ -382,7 +390,7 @@ Section semanticSyntax.
     □((▷ ¬P) ∗-∗ P) -∗ ¬¬P.
   Proof. iIntros "#Eq !> #NP". iApply "NP". by iApply "Eq". Qed.
 
-  Lemma notNotSelfAppRussellV: (¬ (¬ selfApp russellV))%I.
+  Lemma notNotSelfAppRussellV: (¬¬ selfApp russellV)%I.
   Proof.
     iIntros "!> #notVAV". iApply (irisTaut (selfApp russellV)) => //.
     by iApply selfAppEquiv.
