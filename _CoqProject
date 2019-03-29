@@ -6,3 +6,4 @@ theories/DMin/syn.v
 theories/DMin/synNonMutual.v
 theories/DMin/synTypes.v
 theories/DMin/synNMOfe.v
+theories/DMin/synNMOfeClosedSemTypes.v
