@@ -321,6 +321,15 @@ Section semanticSyntax.
   Lemma pack_unpack Φ v: pack (unpack Φ) v ≡ (▷ Φ v)%I.
   Proof. by rewrite /= iSyn_unfold_fold. Qed.
 
+  Instance Inhabited_preD: Inhabited preD := populate (λne v, False)%I.
+  Instance Ids_pred: Ids preD := λ _, inhabitant.
+  (* XXX Argh, this completely doesn't work. We
+     need to follow autosubst_preds — and that's what we
+     had on the whiteboard. *)
+  (* Global Instance Rename_preD : Rename preD := λ r preD, λne '(Next v), preD (Next (rename r v)).
+  ρ, pred (r >>> ρ). *)
+
+
   (* First semantic type! *)
   Program Definition proj2: vl -n> D :=
     λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ □ unpack Φ w)%I.
