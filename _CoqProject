@@ -7,3 +7,4 @@ theories/DMin/synNonMutual.v
 theories/DMin/synTypes.v
 theories/DMin/synNMOfe.v
 theories/DMin/synNMOfeClosedSemTypes.v
+theories/DMin/synNMOfeOpenSemTypes.v
