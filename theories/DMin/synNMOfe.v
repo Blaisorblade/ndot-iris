@@ -224,16 +224,16 @@ Section synCofe.
     | vnat n => vnat n
     end.
 
-  Definition syn_compl {s} `{Cofe α} : Compl (synC α s) := λ c,
+  Definition syn_compl {s} `{!Cofe α} : Compl (synC α s) := λ c,
     syn_traverse (c 0) c.
-  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC α s) :=
+  Global Program Instance syn_cofe {s} `{!Cofe α} : Cofe (synC α s) :=
     { compl := syn_compl }.
   Next Obligation.
     intros ?? n c; rewrite /syn_compl.
     unshelve epose proof (chain_cauchy c 0 n _) as Heq; first by lia.
     move: (c 0) Heq => ci; move Heq2: (c n) => cn.
     (* XXX Ugly, but not sure what to do about it. *)
-    induction ci; intros; inversion Heq; simplify_eq; move: H0 => Hcn;
+    induction ci; intros; inversion Heq; simplify_eq; move: H => Hcn;
       rewrite /= ?conv_compl /= -?Hcn; f_equiv => //;
       (apply IHci||apply IHci1||apply IHci2); by rewrite //= -Hcn.
   Qed.
