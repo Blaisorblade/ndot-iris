@@ -115,14 +115,30 @@ Section openSemanticSyntax.
     λ sb preD, λne ρ, preD (lift_varfun (sb >>> iSyn_unfold >>> @subst _ subst_prevl ρ)).
   Next Obligation. intros **???. f_equiv. rewrite /lift_varfun => ? /=. f_equiv. Admitted.
 
-  Global Instance rens_equiv : Equiv (var → var) := λ f g, ∀ x, f x ≡ g x.
-  Global Instance rens_equivalence : Equivalence (≡@{var → var}).
+  Global Instance rens_equiv `{Equiv A} : Equiv (var → A) := λ f g, ∀ x, f x ≡ g x.
+  Global Instance rens_equivalence `{Equiv A} `{!Equivalence (≡@{A})} : Equivalence (≡@{var → A}).
   Proof.
     split => //=; hnf.
+    - by intros f ?.
+    - by intros f g ? x.
+    - by intros f g h ?? x; trans (g x).
+  Qed.
+  Global Instance discr_fun_equiv `{OfeDiscrete A} `{Equiv B} : Equiv (A → B) := λ f g, ∀ x, f x ≡ g x.
+  Global Instance discr_fun_equivalence `{OfeDiscrete A} `{Equiv B} `{!Equivalence (≡@{B})} : Equivalence (≡@{A → B}).
+  Proof.
+    split => //=; hnf.
+    - by intros f ?.
     - by intros f g ? x.
     - by intros f g h ?? x; trans (g x).
   Qed.
   Canonical Structure renameC := discreteC (var → var).
+  Definition discr_fun_syn_equiv `{OfeDiscrete A} {s} : Equiv (A → iSyn s) := _.
+  Definition discr_fun_syn_dist `{OfeDiscrete A} {s} : Dist (A → iSyn s).
+  Admitted.
+
+  Definition ofe_mix `{OfeDiscrete A} {s} : OfeMixin (A → iSyn s).
+  Program Definition substC `{OfeDiscrete A} {s} : ofeT := OfeT { (A → iSyn s) }.
+  Canonical Structure substC
 
   Global Program Instance syn_rename_ne {s: sort}
     `{proper_hrpreD1: ∀ ρ, NonExpansive (λ v: preD, rename ρ v)}
