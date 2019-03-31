@@ -115,33 +115,38 @@ Section openSemanticSyntax.
     λ sb preD, λne ρ, preD (lift_varfun (sb >>> iSyn_unfold >>> @subst _ subst_prevl ρ)).
   Next Obligation. intros **???. f_equiv. rewrite /lift_varfun => ? /=. f_equiv. Admitted.
 
+  Global Instance rens_equiv : Equiv (var → var) := λ f g, ∀ x, f x ≡ g x.
+  Global Instance rens_equivalence : Equivalence (≡@{var → var}).
+  Proof.
+    split => //=; hnf.
+    - by intros f g ? x.
+    - by intros f g h ?? x; trans (g x).
+  Qed.
+  Canonical Structure renameC := discreteC (var → var).
+
+  Global Program Instance syn_rename_ne {s: sort}
+    `{proper_hrpreD1: ∀ ρ, NonExpansive (λ v: preD, rename ρ v)}
+    `{proper_hrpreD2: NonExpansive2 (λ (ρ: varC -n> varC) (v: preD), rename ρ v)}:
+    NonExpansive2 (@syn_rename (laterC preD) _ s).
+  Next Obligation.
+    intros ** r1 r2 Hr t t' Ht. move: r1 r2 t' Ht Hr.
+    induction t; intros; inversion Ht; simplify_eq; cbn; f_equiv;
+      try by [apply IHt | apply IHt1 | apply IHt2|].
+    - inversion H1; exact: Hr.
+    - eapply IHt=>//. move => [|m] //=. f_equiv. apply Hr.
+    - move: α α2 {Ht} H2 => [α] [α2] H2 /=. rewrite /Rename_lpreD.
+      f_contractive.
+      by eapply (proper_hrpreD2 n (λne x, r1 x) (λne x, r2 x)).
+  Qed.
+
   Program Definition syn_rename_ofe {s}
     `{proper_hrpreD1: ∀ ρ, NonExpansive (λ v: preD, rename ρ v)}
     `{proper_hrpreD2: NonExpansive2 (λ (ρ: varC -n> varC) (v: preD), rename ρ v)}:
     (varC -n> varC) -n> iSyn s -n> iSyn s :=
     λne ρ v, syn_rename ρ v.
-  Next Obligation.
-    intros **???. move: s x y H ρ.
-    induction x; intros; inversion H; simplify_eq; cbn; f_equiv;
-      try by [apply IHx| apply IHx1 | apply IHx2|].
-    - by inversion H2.
-    - by unshelve eapply (IHx _ _ (λne x, upren ρ x)).
-    - by apply later_map_ne.
-      (* move: α α2 {H} H3 => [α] [α2] H3 /=. rewrite /Rename_lpreD.
-      f_contractive.
-      by eapply proper_hrpreD2. *)
-  Qed.
-  Next Obligation.
-    intros ** x y H t; move: x y H.
-    induction t; cbn; intros; f_equiv;
-    try by [apply IHt| apply IHt1 | apply IHt2|]; eauto.
-    - unshelve eapply (IHt (λne z, upren x z) (λne z, upren y z)).
-      move => [|m] //=. f_equiv. apply H.
-    - move: α => [α] /=. rewrite /Rename_lpreD.
-      (* f_contractive. *)
-      f_equiv; by eapply proper_hrpreD2.
-  Qed.
+  Solve All Obligations with solve_proper_cbn.
   Fail Next Obligation.
+
   Program Definition syn_hsubst_ofe {s} {hspreD: HSubst vl preD}
     `{proper_hrpreD1: ∀ ρ, NonExpansive (λ v: preD, rename ρ v)}
     `{proper_hrpreD2: NonExpansive2 (λ (ρ: varC -n> varC) (v: preD), rename ρ v)}
@@ -161,14 +166,9 @@ Section openSemanticSyntax.
     induction t; cbn; intros; f_equiv;
     try by [apply IHt| apply IHt1 | apply IHt2|]; eauto.
     - unshelve eapply (IHt (λne z, up x z) (λne z, up y z)).
-
-      (* Should have just proved that the existing function is non-expansive? *)
       rewrite /up.
       move => [|m] //=.
-      (* by f_equiv. *)
-      rewrite /rename.
-      replace Rename_syn with (λ (ρ: var -> var) (v: vl), (@syn_rename_ofe vls _ _ (λne x, ρ x) v));
-      by [f_equiv|].
+      by f_equiv.
     - move: α => [α] /=. rewrite /hsubst_lpreD.
       f_contractive.
       eapply proper_hspreD2 => //. by apply dist_S.
