@@ -115,30 +115,33 @@ Section openSemanticSyntax.
     λ sb preD, λne ρ, preD (lift_varfun (sb >>> iSyn_unfold >>> @subst _ subst_prevl ρ)).
   Next Obligation. intros **???. f_equiv. rewrite /lift_varfun => ? /=. f_equiv. Admitted.
 
-  Global Instance rens_equiv `{Equiv A} : Equiv (var → A) := λ f g, ∀ x, f x ≡ g x.
-  Global Instance rens_equivalence `{Equiv A} `{!Equivalence (≡@{A})} : Equivalence (≡@{var → A}).
+  Global Instance discr_fun_equiv `{OfeDiscrete A} `{Equiv B} : Equiv (A → B) :=
+    λ f g, ∀ x, f x ≡ g x.
+  Global Instance discr_fun_equivalence `{OfeDiscrete A} `{Equiv B} `{!Equivalence (≡@{B})} :
+    Equivalence (≡@{A → B}).
   Proof.
     split => //=; hnf.
     - by intros f ?.
     - by intros f g ? x.
     - by intros f g h ?? x; trans (g x).
   Qed.
-  Global Instance discr_fun_equiv `{OfeDiscrete A} `{Equiv B} : Equiv (A → B) := λ f g, ∀ x, f x ≡ g x.
-  Global Instance discr_fun_equivalence `{OfeDiscrete A} `{Equiv B} `{!Equivalence (≡@{B})} : Equivalence (≡@{A → B}).
-  Proof.
-    split => //=; hnf.
-    - by intros f ?.
-    - by intros f g ? x.
-    - by intros f g h ?? x; trans (g x).
-  Qed.
+  Global Instance rens_equiv `{Equiv A} : Equiv (var → A) := discr_fun_equiv.
+  Global Instance rens_equivalence `{Equiv A} `{!Equivalence (≡@{A})} : Equivalence (≡@{var → A}) := _.
   Canonical Structure renameC := discreteC (var → var).
-  Definition discr_fun_syn_equiv `{OfeDiscrete A} {s} : Equiv (A → iSyn s) := _.
-  Definition discr_fun_syn_dist `{OfeDiscrete A} {s} : Dist (A → iSyn s).
-  Admitted.
+  Global Instance discr_fun_syn_equiv `{OfeDiscrete A} {s} : Equiv (A → iSyn s) := _.
+  Global Instance discr_fun_syn_dist `{OfeDiscrete A} {s} : Dist (A → iSyn s) := λ n f g, ∀ x, f x ≡{n}≡ g x.
 
-  Definition ofe_mix `{OfeDiscrete A} {s} : OfeMixin (A → iSyn s).
-  Program Definition substC `{OfeDiscrete A} {s} : ofeT := OfeT { (A → iSyn s) }.
-  Canonical Structure substC
+  Definition ofe_fun_syn_mixin `{OfeDiscrete A} {s} : OfeMixin (A → iSyn s).
+  Proof. split.
+    - intros f g; split; [intros Hfg n k; apply equiv_dist, Hfg|].
+      intros Hfg k; apply equiv_dist=> n; apply Hfg.
+    - intros n; split.
+      + by intros f x.
+      + by intros f g ? x.
+      + by intros f g h ?? x; trans (g x).
+    - by intros n f g ? x; apply dist_S.
+  Qed.
+  Canonical Structure substC `{OfeDiscrete A} {s} : ofeT := OfeT (A → iSyn s) ofe_fun_syn_mixin.
 
   Global Program Instance syn_rename_ne {s: sort}
     `{proper_hrpreD1: ∀ ρ, NonExpansive (λ v: preD, rename ρ v)}
