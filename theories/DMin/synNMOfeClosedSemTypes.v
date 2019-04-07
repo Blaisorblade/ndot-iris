@@ -48,19 +48,34 @@ Section semanticSyntax.
   (* Check that values contain terms. *)
   Definition _test (v: vl) (t: tm) : iProp Σ :=
     (∃ Φ t, v ≡ vpack Φ t)%I.
+  (* Instance Next_ne `{A: ofeT}: NonExpansive (@Next A) := _. *)
+  (* Program Definition NextF `{A: ofeT}: A -n> laterC A := CofeMor Next. *)
+  Program Definition iSyn_unfold' : vl -n> laterC iPreVl :=
+    CofeMor Next ◎ iSyn_unfold.
+  Program Definition iSyn_fold' : laterC iPreVl → vl :=
+    iSyn_fold ∘ later_car.
+  Global Arguments iSyn_unfold': simpl never.
+  Global Arguments iSyn_fold': simpl never.
+  Instance iSyn_fold'_anti_contractive n :
+    Proper (dist n ==> dist_later n) iSyn_fold'.
+  Proof. move :n =>[|n]; rewrite /iSyn_fold' => *??? //=. by f_equiv. Qed.
+  Lemma iSyn_fold_unfold' (v : vl) : iSyn_fold' (iSyn_unfold' v) ≡ v.
+  Proof. apply solution_unfold_fold. Qed.
+  Lemma iSyn_unfold_fold' (v : laterC iPreVl) : iSyn_unfold' (iSyn_fold' v) ≡ v.
+  Proof. apply solution_fold_unfold. Qed.
 
   Program Definition unpack: preD -n> D :=
-    λne Φ v, Φ (Next (iSyn_unfold v)).
+    λne Φ v, Φ (iSyn_unfold' v).
   Solve All Obligations with solve_proper.
 
   (** Note that here we get an extra later when we *pack*
       predicates (so that we can pass them to vpack). *)
   Program Definition pack: D -n> preD :=
-    λne Φ '(Next w), (▷ Φ (iSyn_fold w))%I.
-  Solve All Obligations with solve_contractive || solve_proper.
+    λne Φ w, (▷ Φ (iSyn_fold' w))%I.
+  Solve All Obligations with rewrite /iSyn_fold'; solve_contractive || solve_proper.
 
   Lemma unpack_pack Φ v: unpack (pack Φ) v ≡ (▷ Φ v)%I.
-  Proof. by rewrite /= iSyn_fold_unfold. Qed.
+  Proof. by rewrite /= iSyn_fold_unfold'. Qed.
   Lemma pack_unpack Φ v: pack (unpack Φ) v ≡ (▷ Φ v)%I.
   Proof. by rewrite /= iSyn_unfold_fold. Qed.
 
