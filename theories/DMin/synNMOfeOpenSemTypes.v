@@ -161,13 +161,22 @@ Section openSemanticSyntax.
       f_equiv => //. by apply HSubstPred0.
   Qed.
 
-  Program Definition hsubst_preD (rec: (var -c> vl) → preD → preD): (var -c> vl) → preD → preD :=
-    let hsubst_preD' : HSubst vl preD := rec in
-    λ sb preD, λne ρ, preD (sb >>> iSyn_unfold' >>> subst ρ).
+  Program Definition hsubst_preD (rec: (var -c> vl) -n> preD -n> preD): (var -c> vl) -n> preD -n> preD :=
+    let hsubst_preD' : HSubst vl preD := λ s t, rec s t in
+    λne sb preD ρ, preD (sb >>> iSyn_unfold' >>> subst ρ).
   Next Obligation. intros **???.
     f_equiv=>?. rewrite /= /subst_lprevl.
     f_equiv. rewrite /subst /Subst_vl /vl_subst /=.
-    (* The type of rec is bad. *)
+    apply subst_vl_preD_ne => // x1.
+    specialize (H x1).
+    (* apply iSyn_fold'_anti_contractive. *)
+    rewrite /iSyn_fold' /=.
+    f_equiv.
+    destruct (x x1), (y x1).
+    case: n H => [|n] /= H.
+    - hnf in H; admit.
+    - hnf in H; cbn in H.
+    admit.
   Admitted.
 (*
   (* This will probably need some Iris fixpoint.
