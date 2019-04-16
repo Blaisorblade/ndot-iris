@@ -161,29 +161,34 @@ Section openSemanticSyntax.
       f_equiv => //. by apply HSubstPred0.
   Qed.
 
-  Program Definition hsubst_preD (rec: (var -c> vl) -n> preD -n> preD): (var -c> vl) -n> preD -n> preD :=
-    let hsubst_preD' : HSubst vl preD := λ s t, rec s t in
-    λne sb preD ρ, preD (sb >>> iSyn_unfold' >>> subst ρ).
-  Next Obligation. intros **???.
-    f_equiv=>?. rewrite /= /subst_lprevl.
-    f_equiv. rewrite /subst /Subst_vl /vl_subst /=.
-    apply subst_vl_preD_ne => // x1.
-    specialize (H x1).
-    (* apply iSyn_fold'_anti_contractive. *)
-    rewrite /iSyn_fold' /=.
-    f_equiv.
-    destruct (x x1), (y x1).
-    case: n H => [|n] /= H.
-    - hnf in H; admit.
-    - hnf in H; cbn in H.
-    admit.
-  Admitted.
-(*
+  Global Instance: Contractive iSyn_unfold'.
+  Proof. solve_contractive. Qed.
+
   (* This will probably need some Iris fixpoint.
     And we need to lift subst to the category of OFEs. *)
+
+  (* Using pack adds excessive delay... *)
+  Program Definition hsubst_preD (rec: (var -c> vl) -n> preD -n> preD): (var -c> vl) -n> preD -n> preD :=
+    let hsubst_preD' : HSubst vl preD := λ s t, rec s t in
+    λne sb preD, pack (λne ρ v, unpack preD (sb >>> subst ρ) v).
+    (* ρ v, pack (unpack preD) (λ x, subst ρ (iSyn_unfold' (sb x))) v. *)
+    (* (sb >>> iSyn_unfold' >>> subst ρ). *)
+  Solve All Obligations with solve_proper_ho.
+  Next Obligation.
+    intros **???? => /=.
+    (do 2 f_equiv) => ?/=; do 2 f_equiv.
+    by apply subst_vl_preD_ne.
+  Qed.
+  Solve All Obligations with solve_proper_ho.
+  Next Obligation.
+    intros **?????? => /=.
+    (do 3 f_equiv) => ? /=; do 2 f_equiv.
+    by apply subst_vl_preD_ne.
+  Qed.
+(*
   Program Definition hsubst_preD (rec: (var -c> vl) → preD → preD): (var -c> vl) → preD → preD :=
     let hsubst_preD' : HSubst vl preD := rec in
     λ sb preD, λne ρ, preD (sb >>> iSyn_unfold >>> @subst _ subst_prevl ρ).
-  Next Obligation. intros **???. f_equiv. rewrite /lift_varfun => ? /=. f_equiv. Admitted. *)
+  Next Obligation. intros **???. f_equiv. rewrite /lift_varfun => ? /=. f_equiv. Admitted. *) *)
 
 End openSemanticSyntax.
