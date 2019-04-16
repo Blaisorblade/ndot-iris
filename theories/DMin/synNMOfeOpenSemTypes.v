@@ -113,6 +113,8 @@ Section openSemanticSyntax.
       ltac:(fun _ => first [ rewrite iSyn_unfold_fold | intros ?; progress simpl | f_equiv ]).
   Qed.
 
+  (* Autosubst instances. *)
+
   Instance Inhabited_preD: Inhabited preD := populate (λne _ _, False)%I.
   Instance Ids_pred: Ids preD := λ _, inhabitant.
 
@@ -121,12 +123,17 @@ Section openSemanticSyntax.
     λ r, λne preD ρ, preD (r >>> ρ).
   Solve All Obligations with solve_proper_ho.
 
+  (* Renaming is relatively easy: *)
   Global Instance Rename_preD : Rename preD := rename_preD.
-
-  (* Global Instance Rename_lpreD : Rename (laterC preD) :=
-    λ r '(Next preD), Next (rename r preD). *)
-
   Global Instance Rename_iSyn {s}: Rename (iSyn s) := _.
+
+  Global Instance syn_rename_ne {s: sort} r:
+    NonExpansive (@syn_rename preD Rename_preD s r).
+  Proof.
+    intros ** t t' Ht. move: r t' Ht.
+    induction t; intros; inversion Ht; simplify_eq; cbn; f_equiv;
+      try by [|apply IHt | apply IHt1 | apply IHt2 | f_equiv].
+  Qed.
 
   Global Instance subst_prevl `{!HSubst vl preD} : Subst iPreVl :=
     λ sb v, iSyn_unfold (subst (iSyn_fold ∘ sb) (iSyn_fold v)).
@@ -136,17 +143,6 @@ Section openSemanticSyntax.
   Global Instance hsubst_lpreD `{!HSubst vl preD} : HSubst vl (laterC preD) :=
     λ sb '(Next preD), Next (hsubst sb preD).
 
-  Global Instance syn_rename_ne {s: sort} r:
-    (* (Rename_preD0 : (var → var) → preD -n> preD):
-    let Rename_preD1 : Rename preD := (λ r v, Rename_preD0 r v) in
-    let Rename_preD : Rename (laterC preD) := (λ r '(Next v), Next (Rename_preD0 r v)) in *)
-    NonExpansive (@syn_rename preD Rename_preD s r).
-  Proof.
-    intros ** t t' Ht. move: r t' Ht.
-    induction t; intros; inversion Ht; simplify_eq; cbn; f_equiv;
-      try by [|apply IHt | apply IHt1 | apply IHt2 | f_equiv].
-  Qed.
-  (* Global Program Instance syn_up_ne: NonExpansive (@up vl _ _). *)
   Global Instance subst_vl_preD_ne
     (HSubstPred0 : (var -c> vl) -n> preD -n> preD):
     let HSubstPred: HSubst vl preD := (λ sb p, HSubstPred0 sb p)
@@ -157,24 +153,13 @@ Section openSemanticSyntax.
     all: match goal with a: var, b: var, H: ?a ≡{ _ }≡ ?b |- _ => by [inversion H; apply Heqs] end || f_equiv.
     all: rewrite /hsubst; try by [|apply IHx|apply IHx1|apply IHx2].
     - apply IHx => //.
-      (* have Hfoo: NonExpansive (@up vl _ _). admit.
-      by eapply Hfoo. *)
       (* Show that up is non-expansive: *)
       rewrite // /up; move => [|i] //=. by eapply syn_rename_ne, Heqs.
+      (* Maybe lift that to a separate version: *)
+      (* Global Program Instance syn_up_ne: NonExpansive (@up vl _ _). *)
     - (* repeat f_equiv. *)
       f_equiv => //. by apply HSubstPred0.
   Qed.
-
-  (* Global Instance proper_hslpreD ρ `{!HSubst vl preD}
-    `{proper_hspreD: ∀ ρ, NonExpansive (λ v: preD, hsubst ρ v)}:
-    NonExpansive (λ v: laterC preD, hsubst ρ v).
-  Proof.
-    move => n [x] [y] H /=. rewrite /hsubst_lpreD.
-    f_contractive. by eapply proper_hspreD.
-  Qed. *)
-  (* About Subst_vl. *)
-
-  (* Global Program Instance subst_vl_ne `{α: ofeT} `{Rename α} `{HSubst vl α }{s}: NonExpansive (@Subst_vl α _ _ s). *)
 
   Program Definition hsubst_preD (rec: (var -c> vl) → preD → preD): (var -c> vl) → preD → preD :=
     let hsubst_preD' : HSubst vl preD := rec in
