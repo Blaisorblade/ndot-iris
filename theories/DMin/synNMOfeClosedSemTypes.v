@@ -18,31 +18,31 @@ Section semanticSyntax.
   Context {Σ : gFunctors}. (* Look ma', no requirements! *)
   (* XXX wonder if lifting up the later would make
      proofs easier. *)
-  Definition semVls: cFunctor := (synCF ((▶ ∙) -n> iProp Σ) vls)%CF.
+  Definition semVls: oFunctor := (synCF ((▶ ∙) -n> iPropO Σ) vls)%OF.
   Import cofe_solver.
 
   Definition semVls_result:
     solution semVls := solver.result _.
   Definition iPreVl: ofeT := semVls_result.
 
-  Definition preD := laterC iPreVl -n> iProp Σ.
-  Definition iSyn s : ofeT := synC preD s.
+  Definition preD := laterO iPreVl -n> iPropO Σ.
+  Definition iSyn s : ofeT := synO preD s.
 
   Notation "'vl'" := (iSyn vls).
   Notation "'tm'" := (iSyn tms).
-  Notation D := (vl -n> iProp Σ).
+  Notation D := (vl -n> iPropO Σ).
 
   (*
   Inspired from code in
   https://gitlab.mpi-sws.org/iris/iris/blob/82e7e2ef749e4f25af0fa14d27d01d624bb9cbd6/theories/base_logic/lib/iprop.v#L133-150
   *)
   Definition iSyn_unfold : vl -n> iPreVl :=
-    solution_fold semVls_result.
-  Definition iSyn_fold : iPreVl -n> vl := solution_unfold _.
+    ofe_iso_1 semVls_result.
+  Definition iSyn_fold : iPreVl -n> vl := ofe_iso_2 semVls_result.
   Lemma iSyn_fold_unfold (v : vl) : iSyn_fold (iSyn_unfold v) ≡ v.
-  Proof. apply solution_unfold_fold. Qed.
+  Proof. apply ofe_iso_21. Qed.
   Lemma iSyn_unfold_fold (v : iPreVl) : iSyn_unfold (iSyn_fold v) ≡ v.
-  Proof. apply solution_fold_unfold. Qed.
+  Proof. apply ofe_iso_12. Qed.
   (* Semantic types! *)
 
   (* Check that values contain terms. *)
@@ -105,13 +105,13 @@ Section semanticSyntax.
   Solve All Obligations with solve_proper.
 
   Lemma unpack_lemma w φ φ' t t':
-    (vpack (pack φ) t ≡ vpack φ' t' -∗
-    unpack φ' w ≡ ▷ φ w)%I: iProp Σ.
+    vpack (pack φ) t ≡ vpack φ' t' ⊢@{iPropI Σ}
+    unpack φ' w ≡ ▷ φ w.
   Proof.
     rewrite -unpack_pack. iIntros "Heq".
     (* unshelve iApply (f_equiv (λne P, unpack P w)); [> solve_proper | apply _ | idtac ]. *)
-    iApply (f_equiv (ofe_flip ofe_apply w)). iApply f_equiv.
-    iApply (f_equiv (vpack_1_inv inhabitant) (vpack φ' t') (vpack (pack φ) t)).
+    iApply (f_equivI (ofe_flip ofe_apply w)). iApply f_equivI.
+    iApply (f_equivI (vpack_1_inv inhabitant) (vpack φ' t') (vpack (pack φ) t)).
     by iRewrite "Heq".
   Qed.
 
@@ -124,7 +124,7 @@ Section semanticSyntax.
     by rewrite unpack_pack.
   Qed.
 
-  Lemma selfAppEquiv: ((▷ ¬ selfApp russellV) ∗-∗ selfApp russellV)%I.
+  Lemma selfAppEquiv: (▷ ¬ selfApp russellV) ⊣⊢ selfApp russellV.
   Proof.
     iSplit.
     - iIntros "#HnotVAV"; iExists _, _; iSplit => //.
@@ -142,18 +142,18 @@ Section semanticSyntax.
     □((▷ ¬P) ∗-∗ P) -∗ ¬¬P.
   Proof. iIntros "#Eq !> #NP". iApply "NP". by iApply "Eq". Qed.
 
-  Lemma notNotSelfAppRussellV: (¬¬ selfApp russellV)%I.
+  Lemma notNotSelfAppRussellV: ⊢ ¬¬ selfApp russellV.
   Proof.
     iIntros "!> #notVAV". iApply (irisTaut (selfApp russellV)) => //.
     by iApply selfAppEquiv.
   Qed.
 
-  Definition notRussellV: (¬ russellP russellV)%I := notNotSelfAppRussellV.
+  Definition notRussellV: ⊢ ¬ russellP russellV := notNotSelfAppRussellV.
 
   (* XXX TODO: ltyping.v pairs predictes with their proofs
      of persistence, then builds a COFE on such predicates. *)
   Record sem_ty := {
-    sem_ty_car :> vl -n> iProp Σ;
+    sem_ty_car :> vl -n> iPropI Σ;
     sem_ty_persistent v : Persistent (sem_ty_car v);
   }.
 

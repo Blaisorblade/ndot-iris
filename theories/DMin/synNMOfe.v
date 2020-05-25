@@ -158,43 +158,43 @@ Section synOfe.
     - move => n x y; elim; constructor; eauto; by apply dist_S.
   Qed.
 
-  Canonical Structure synC s: ofeT := OfeT (syn α s) (synOfeMixin s).
-  Canonical Structure vlC: ofeT := synC vls.
-  Canonical Structure tmC: ofeT := synC tms.
+  Canonical Structure synO s: ofeT := OfeT (syn α s) (synOfeMixin s).
+  Canonical Structure vlO: ofeT := synO vls.
+  Canonical Structure tmO: ofeT := synO tms.
   Unset Program Cases.
 
-  Program Definition tv_inv {s} (v : vlC) : synC s -n> vlC := λne ast,
+  Program Definition tv_inv {s} (v : vlO) : synO s -n> vlO := λne ast,
     match ast with tv v' => v' | _ => v end.
   Next Obligation. solve_proper. Qed.
 
-  Program Definition tapp_1_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+  Program Definition tapp_1_inv {s} (t : tmO) : synO s -n> tmO := λne ast,
     match ast with tapp t' _ => t' | _ => t end.
   Next Obligation. solve_proper. Qed.
-  Program Definition tapp_2_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+  Program Definition tapp_2_inv {s} (t : tmO) : synO s -n> tmO := λne ast,
     match ast with tapp _ t' => t' | _ => t end.
   Next Obligation. solve_proper. Qed.
 
-  Program Definition tproj_inv {s} (v : vlC) : synC s -n> vlC := λne ast,
+  Program Definition tproj_inv {s} (v : vlO) : synO s -n> vlO := λne ast,
     match ast with tproj v' => v' | _ => v end.
   Next Obligation. solve_proper. Qed.
-  Program Definition tskip_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+  Program Definition tskip_inv {s} (t : tmO) : synO s -n> tmO := λne ast,
     match ast with tskip t' => t' | _ => t end.
   Next Obligation. solve_proper. Qed.
 
-  Program Definition vpack_1_inv {s} (a : α) : synC s -n> α := λne ast,
+  Program Definition vpack_1_inv {s} (a : α) : synO s -n> α := λne ast,
     match ast with vpack a' _ => a' | _ => a end.
   Next Obligation. solve_proper. Qed.
-  Program Definition vpack_2_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+  Program Definition vpack_2_inv {s} (t : tmO) : synO s -n> tmO := λne ast,
     match ast with vpack _ t' => t' | _ => t end.
   Next Obligation. solve_proper. Qed.
-  Program Definition vabs_inv {s} (t : tmC) : synC s -n> tmC := λne ast,
+  Program Definition vabs_inv {s} (t : tmO) : synO s -n> tmO := λne ast,
     match ast with vabs t' => t' | _ => t end.
   Next Obligation. solve_proper. Qed.
 
 End synOfe.
-Arguments synC: clear implicits.
-Arguments tmC: clear implicits.
-Arguments vlC: clear implicits.
+Arguments synO: clear implicits.
+Arguments tmO: clear implicits.
+Arguments vlO: clear implicits.
 
 Section synCofe.
   Context {α: ofeT}.
@@ -202,9 +202,9 @@ Section synCofe.
   (* We must write syn_compl
      by recursion on (c 0); when we get to an alpha, we
      take the limit. *)
-  Implicit Types (t: tmC α) (v: vlC α) (s: sort).
+  Implicit Types (t: tmO α) (v: vlO α) (s: sort).
   Fixpoint syn_traverse {s} `{Cofe α}
-    (ast: synC α s) : Compl (synC α s) := λ c,
+    (ast: synO α s) : Compl (synO α s) := λ c,
     match ast with
     | tv v => tv
         (syn_traverse v (chain_map (tv_inv v) c))
@@ -224,9 +224,9 @@ Section synCofe.
     | vnat n => vnat n
     end.
 
-  Definition syn_compl {s} `{Cofe α} : Compl (synC α s) := λ c,
+  Definition syn_compl {s} `{Cofe α} : Compl (synO α s) := λ c,
     syn_traverse (c 0) c.
-  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synC α s) :=
+  Global Program Instance syn_cofe {s} `{Cofe α} : Cofe (synO α s) :=
     { compl := syn_compl }.
   Next Obligation.
     intros ?? n c; rewrite /syn_compl.
@@ -245,26 +245,26 @@ Instance syn_map_ne {A A' : ofeT} {s} n :
 Proof. induction 2; cbn; constructor; eauto. Qed.
 
 Definition synC_map {A A' s} (f : A -n> A') :
-  synC A s -n> synC A' s := CofeMor (syn_map f).
+  synO A s -n> synO A' s := OfeMor (syn_map f).
 Instance synC_map_ne {A A' s} :
   NonExpansive (@synC_map A A' s).
 Proof. intros ???? ast; induction ast; cbn; constructor; eauto. Qed.
 
-Program Definition synCF (F : cFunctor) s: cFunctor := {|
-  cFunctor_car A B := synC (cFunctor_car F A B) s;
-  cFunctor_map A1 A2 B1 B2 fg :=
-    synC_map (cFunctor_map F fg)
+Program Definition synCF (F : oFunctor) s: oFunctor := {|
+  oFunctor_car A _ B _ := synO (oFunctor_car F A B) s;
+  oFunctor_map A1 _ A2 _ B1 _ B2 _ fg :=
+    synC_map (oFunctor_map F fg)
 |}.
 Next Obligation.
-  intros ?? A1 A2 B1 B2 n ???; by apply synC_map_ne; apply cFunctor_ne.
+  intros ?? A1 ? A2 ? B1 ? B2 ? n ???. apply synC_map_ne. exact: oFunctor_map_ne.
 Qed.
-Next Obligation. induction 0; cbn; f_equiv; eauto using cFunctor_id. Qed.
-Next Obligation. induction 0; cbn; f_equiv; eauto using cFunctor_compose. Qed.
+Next Obligation. induction x; cbn; f_equiv; eauto using oFunctor_map_id. Qed.
+Next Obligation. induction x; cbn; f_equiv; eauto using oFunctor_map_compose. Qed.
 
 Instance synCF_contractive F s:
-  cFunctorContractive F →
-  cFunctorContractive (synCF F s).
+  oFunctorContractive F →
+  oFunctorContractive (synCF F s).
 Proof.
-  intros ?? A1 A2 B1 B2 n ???;
-    by apply synC_map_ne, cFunctor_contractive.
+  intros ?? A1 ? A2 ? B1 ? B2 ? n ???;
+    by apply synC_map_ne, oFunctor_map_contractive.
 Qed.

@@ -1,5 +1,7 @@
 -Q theories DN
 -arg -w -arg -notation-overridden,-redundant-canonical-projection,-several-object-files
+# change_no_check does not exist yet in 8.9.
+-arg -w -arg -convert_concl_no_check
 
 theories/autosubst_preds.v
 theories/DMin/syn.v
