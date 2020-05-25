@@ -9,7 +9,7 @@ From Coq.ssr Require Import ssreflect.
 From iris.algebra Require Import base ofe.
 From iris.base_logic Require Export iprop.
 From iris.proofmode Require Export tactics.
-Import uPred.
+Import cofe_solver uPred.
 
 From DN Require Import autosubst_preds DMin.synNonMutual DMin.synNMOfe.
 
@@ -19,7 +19,6 @@ Section openSemanticSyntax.
   (* Here, we put the later around the whole function, as an experiment.
      This *)
   Definition semVls: oFunctor := (synCF (▶ ((varO -n> ∙) -n> ∙ -n> iPropO Σ)) vls)%OF.
-  Import cofe_solver.
 
   Definition semVls_result:
     solution semVls := solver.result _.
@@ -47,7 +46,7 @@ Section openSemanticSyntax.
 
   (* Check that values contain terms. *)
   Definition _test (v: vl) (t: tm) : iProp Σ :=
-    (∃ Φ t, v ≡ vpack Φ t)%I.
+    ∃ Φ t, v ≡ vpack Φ t.
 
   Program Definition unpack: laterO preD -n> D :=
     λne '(Next Φ) ρ v, (▷ Φ (λne x, (iSyn_unfold (ρ x))) (iSyn_unfold v))%I.
@@ -58,17 +57,17 @@ Section openSemanticSyntax.
   (** Note that here we get an extra later when we *pack*
       predicates (so that we can pass them to vpack). *)
   Program Definition pack: D -n> laterO preD :=
-    λne Φ, Next (λne ρ v, Φ (λne x, iSyn_fold (ρ x)) (iSyn_fold v))%I.
+    λne Φ, Next (λne ρ v, Φ (λne x, iSyn_fold (ρ x)) (iSyn_fold v)).
   Solve All Obligations with solve_contractive || solve_proper_cbn.
 
-  Lemma unpack_pack Φ ρ v: unpack (pack Φ) ρ v ≡ (▷ Φ ρ v)%I.
+  Lemma unpack_pack Φ ρ v: unpack (pack Φ) ρ v ⊣⊢ ▷ Φ ρ v.
   Proof.
     (* rewrite /= iSyn_fold_unfold. (repeat f_equiv) => ? /=. *)
     (* exact: iSyn_fold_unfold. *)
     solve_proper_core
       ltac:(fun _ => first [ rewrite iSyn_fold_unfold | intros ?; progress simpl | f_equiv ]).
   Qed.
-  Program Definition later_preD : preD -n> preD := (λne Φ ρ v, ▷ Φ ρ v)%I.
+  Program Definition later_preD : preD -n> preD := λne Φ ρ v, ▷ Φ ρ v.
   Solve All Obligations with solve_proper.
 
   Lemma pack_unpack (Φ: preD):

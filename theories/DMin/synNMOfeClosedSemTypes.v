@@ -10,7 +10,7 @@ From Coq.ssr Require Import ssreflect.
 From iris.algebra Require Import base ofe.
 From iris.base_logic Require Export iprop.
 From iris.proofmode Require Export tactics.
-Import uPred.
+Import cofe_solver uPred.
 
 From DN Require Import autosubst_preds DMin.synNonMutual DMin.synNMOfe.
 
@@ -19,7 +19,6 @@ Section semanticSyntax.
   (* XXX wonder if lifting up the later would make
      proofs easier. *)
   Definition semVls: oFunctor := (synCF ((▶ ∙) -n> iPropO Σ) vls)%OF.
-  Import cofe_solver.
 
   Definition semVls_result:
     solution semVls := solver.result _.
@@ -47,7 +46,7 @@ Section semanticSyntax.
 
   (* Check that values contain terms. *)
   Definition _test (v: vl) (t: tm) : iProp Σ :=
-    (∃ Φ t, v ≡ vpack Φ t)%I.
+    ∃ Φ t, v ≡ vpack Φ t.
 
   Program Definition unpack: preD -n> D :=
     λne Φ v, Φ (Next (iSyn_unfold v)).
@@ -56,15 +55,15 @@ Section semanticSyntax.
   (** Note that here we get an extra later when we *pack*
       predicates (so that we can pass them to vpack). *)
   Program Definition pack: D -n> preD :=
-    λne Φ '(Next w), (▷ Φ (iSyn_fold w))%I.
+    λne Φ '(Next w), ▷ Φ (iSyn_fold w).
   Solve All Obligations with solve_contractive || solve_proper.
 
-  Lemma unpack_pack Φ v: unpack (pack Φ) v ≡ (▷ Φ v)%I.
+  Lemma unpack_pack Φ v: unpack (pack Φ) v ⊣⊢ ▷ Φ v.
   Proof. by rewrite /= iSyn_fold_unfold. Qed.
-  Lemma pack_unpack Φ v: pack (unpack Φ) v ≡ (▷ Φ v)%I.
+  Lemma pack_unpack Φ v: pack (unpack Φ) v ⊣⊢ ▷ Φ v.
   Proof. by rewrite /= iSyn_unfold_fold. Qed.
 
-  Instance Inhabited_preD: Inhabited preD := populate (λne v, False)%I.
+  Instance Inhabited_preD: Inhabited preD := populate (λne v, False).
   Instance Ids_pred: Ids preD := λ _, inhabitant.
   (* XXX Argh, this completely doesn't work. We
      need to follow autosubst_preds — and that's what we
@@ -75,7 +74,7 @@ Section semanticSyntax.
 
   (* First semantic type! *)
   Program Definition proj2: vl -n> D :=
-    λne v w, (∃ Φ t, v ≡ vpack Φ t ∧ □ unpack Φ w)%I.
+    λne v w, ∃ Φ t, v ≡ vpack Φ t ∧ □ unpack Φ w.
   Solve All Obligations with solve_proper.
 
   (** As a sanity check, let's try to port the not-quite-Russell paradox

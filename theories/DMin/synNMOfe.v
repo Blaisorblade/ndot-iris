@@ -6,6 +6,10 @@ From iris.base_logic Require Export iprop.
 
 From DN Require Import autosubst_preds DMin.synNonMutual.
 
+Notation "'λne' x .. y , t" :=
+  (@OfeMor _ _ (λ x, .. (@OfeMor _ _ (λ y, t)%I _) ..) _)
+  (at level 200, x binder, y binder, right associativity).
+
 Section syn_relation.
   Context `{α : Type}.
   Notation "'vl'" := (syn α vls).
