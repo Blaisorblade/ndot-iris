@@ -52,33 +52,23 @@ Section composition.
   Global Instance Inh_pred : Inhabited pred := populate (fun _ _ => False).
   Global Instance Ids_pred : Ids pred := λ _, inhabitant.
 
+  Ltac renLemmas :=
+    hnf; rewrite /hsubst /HSubst_pred ?[@rename _ Rename_pred]/rename /Rename_pred => /= *;
+    try (f_ext => ?); by asimpl.
   Global Instance HRenameLemma_pred : HRenameLemma vl pred.
-  Proof.
-    rewrite /HRenameLemma.
-    rewrite /hsubst /HSubst_pred [@rename _ Rename_pred]/rename /Rename_pred /=.
-    intros; f_ext => ?; by asimpl.
-  Qed.
+  Proof. renLemmas. Qed.
 
   Global Instance HSubstIdLemma_pred : HSubstIdLemma vl pred.
-  Proof.
-    rewrite /HSubstIdLemma /hsubst /HSubst_pred //= => *; f_ext => ?. by asimpl.
-  Qed.
+  Proof. renLemmas. Qed.
 
   Global Instance HCompRenameLemma_pred : HCompRenameLemma vl pred.
-  Proof. done. Qed.
+  Proof. renLemmas. Qed.
 
   Global Instance HRenameCompLemma_pred : HRenameCompLemma vl pred.
-  Proof.
-    rewrite /HRenameCompLemma.
-    rewrite /hsubst /HSubst_pred [@rename _ Rename_pred]/rename /Rename_pred /=.
-    intros; f_ext => ?; by asimpl.
-  Qed.
+  Proof. renLemmas. Qed.
 
   Global Instance HCompLemma_pred : HCompLemma vl pred.
-  Proof.
-    rewrite /HCompLemma /hsubst /HSubst_pred /rename /Rename_pred //=;
-    intros; f_ext => ?; by asimpl.
-  Qed.
+  Proof. renLemmas. Qed.
 
   Global Instance HSubstLemmas_pred : HSubstLemmas vl pred.
   Proof.
